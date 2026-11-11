@@ -1117,6 +1117,7 @@ const GasBridge = {
     }
 
     renderCart();
+    renderGoodsGrid();
   }
 
   function updateCartQty(kode, delta) {
@@ -1133,6 +1134,7 @@ const GasBridge = {
     item.kuantiti = newQty;
     item.subtotalItem = item.kuantiti * item.hargaSatuan;
     renderCart();
+    renderGoodsGrid();
   }
 
   function handleCartQtyInput(kode, inputEl) {
@@ -1157,6 +1159,7 @@ const GasBridge = {
         }
       }
       recalculateCartSummary();
+      renderGoodsGrid();
     }
   }
 
@@ -1173,18 +1176,27 @@ const GasBridge = {
     }
     item.subtotalItem = item.kuantiti * item.hargaSatuan;
     renderCart();
+    renderGoodsGrid();
   }
 
   function removeCartItem(kode) {
     AppState.cart = AppState.cart.filter(function (c) { return c.kode !== kode; });
     renderCart();
+    renderGoodsGrid();
   }
+
+  // Ekspos ke global window untuk inline event handlers
+  window.updateCartQty = updateCartQty;
+  window.removeCartItem = removeCartItem;
+  window.handleCartQtyInput = handleCartQtyInput;
+  window.handleCartQtyCommit = handleCartQtyCommit;
 
   function renderCart() {
     var list = document.getElementById('cartItemsList');
+    if (!list) return;
 
     if (AppState.cart.length === 0) {
-      list.innerHTML = '<div class="cart-empty-state">Keranjang masih kosong.<br>Klik barang di katalog untuk menambahkan.</div>';
+      list.innerHTML = '<div class="cart-empty-state"><div style="font-size: 2rem; margin-bottom: 0.4rem; opacity: 0.6;">🛒</div>Keranjang masih kosong.<br>Klik barang di katalog untuk menambahkan.</div>';
       document.getElementById('btnSubmitCheckout').disabled = true;
       recalculateCartSummary();
       return;
@@ -1192,21 +1204,21 @@ const GasBridge = {
 
     var html = '';
     AppState.cart.forEach(function (item) {
-      html += '<div class="cart-item-row">';
+      html += '<div class="cart-item-row" data-kode="' + escapeHtml(item.kode) + '">';
       html += '  <div class="cart-item-info">';
       html += '    <div class="cart-item-name" title="' + escapeHtml(item.nama) + '">' + escapeHtml(item.nama) + '</div>';
       html += '    <div class="cart-item-price-desc">' + formatRupiah(item.hargaSatuan) + ' x ' + item.kuantiti + ' ' + escapeHtml(item.satuan) + '</div>';
       html += '  </div>';
       html += '  <div class="qty-control">';
-      html += '    <button type="button" class="btn-qty" onclick="updateCartQty(\'' + item.kode + '\', -1)">-</button>';
+      html += '    <button type="button" class="btn-qty" onclick="window.updateCartQty(\'' + escapeHtml(item.kode) + '\', -1)">-</button>';
       html += '    <input type="number" min="1" step="1" class="qty-input" value="' + item.kuantiti + '" '
-        + '      oninput="handleCartQtyInput(\'' + item.kode + '\', this)" '
-        + '      onchange="handleCartQtyCommit(\'' + item.kode + '\', this)" '
+        + '      oninput="window.handleCartQtyInput(\'' + escapeHtml(item.kode) + '\', this)" '
+        + '      onchange="window.handleCartQtyCommit(\'' + escapeHtml(item.kode) + '\', this)" '
         + '      onfocus="this.select()">';
-      html += '    <button type="button" class="btn-qty" onclick="updateCartQty(\'' + item.kode + '\', 1)">+</button>';
+      html += '    <button type="button" class="btn-qty" onclick="window.updateCartQty(\'' + escapeHtml(item.kode) + '\', 1)">+</button>';
       html += '  </div>';
       html += '  <div class="cart-item-subtotal">' + formatRupiah(item.subtotalItem) + '</div>';
-      html += '  <button type="button" class="btn-remove-item" onclick="removeCartItem(\'' + item.kode + '\')" title="Hapus Item">';
+      html += '  <button type="button" class="btn-remove-item" onclick="window.removeCartItem(\'' + escapeHtml(item.kode) + '\')" title="Hapus Item">';
       html += '    <svg class="icon icon-sm" viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>';
       html += '  </button>';
       html += '</div>';
@@ -1234,12 +1246,31 @@ const GasBridge = {
     var disc = Number(document.getElementById('cartDiscountInput').value) || 0;
     var grand = Math.max(0, sub - disc);
 
-    document.getElementById('cartSubtotalText').textContent = formatRupiah(sub);
-    document.getElementById('cartGrandTotalText').textContent = formatRupiah(grand);
+    var subEl = document.getElementById('cartSubtotalText');
+    var grandEl = document.getElementById('cartGrandTotalText');
+    if (subEl) subEl.textContent = formatRupiah(sub);
+    if (grandEl) grandEl.textContent = formatRupiah(grand);
 
     var cashPaid = Number(document.getElementById('cartCashPaidInput').value) || 0;
     var change = cashPaid >= grand ? (cashPaid - grand) : 0;
-    document.getElementById('cartChangeText').textContent = formatRupiah(change);
+    var changeEl = document.getElementById('cartChangeText');
+    if (changeEl) changeEl.textContent = formatRupiah(change);
+
+    // Sinkronkan status floating cart bar di HP
+    var totalQty = 0;
+    AppState.cart.forEach(function (i) { totalQty += (Number(i.kuantiti) || 0); });
+    var floatCountEl = document.getElementById('floatingCartCount');
+    var floatTotalEl = document.getElementById('floatingCartTotal');
+    var floatBarEl = document.getElementById('mobileFloatingCartBar');
+    if (floatCountEl) floatCountEl.textContent = totalQty;
+    if (floatTotalEl) floatTotalEl.textContent = formatRupiah(grand);
+    if (floatBarEl) {
+      if (totalQty > 0 && window.innerWidth < 768) {
+        floatBarEl.style.display = 'flex';
+      } else {
+        floatBarEl.style.display = 'none';
+      }
+    }
   }
 
   // ============================================================================

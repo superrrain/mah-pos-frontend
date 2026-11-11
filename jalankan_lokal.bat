@@ -11,3 +11,4 @@ for /f "tokens=5" %%a in ('netstat -aon ^| findstr :3000 ^| findstr LISTENING') 
 cd /d "%~dp0"
 node server.js
 pause
+
