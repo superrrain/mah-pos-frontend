@@ -1,0 +1,984 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <title>MAH POS - Sistem Kasir Toko ATK</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <meta name="description" content="MAH POS - Aplikasi Kasir dan Manajemen Inventaris Toko Alat Tulis Kantor (ATK) dengan Invoice Cetak, PDF dan Kirim WhatsApp.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
+  <!-- html2pdf.js CDN untuk ekspor PDF instan di browser -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+  <!-- Chart.js CDN untuk visualisasi grafik analitik penjualan -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+  <!-- ======================================================================
+       TOP NAVBAR
+       ====================================================================== -->
+  <header class="top-navbar no-print">
+    <div class="brand-section">
+      <div class="brand-logo-badge">MAH</div>
+      <div class="brand-title">
+        <span id="topBarStoreName">MAH POS</span>
+        <span class="brand-sub">Sistem Kasir Toko ATK</span>
+      </div>
+    </div>
+
+    <div class="nav-actions">
+      <!-- Info Pengguna Aktif -->
+      <div class="user-badge" id="userInfoBox" style="display: none;">
+        <svg class="icon icon-sm" viewBox="0 0 24 24"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg>
+        <span id="activeUserName">Kasir</span>
+        <span class="role-tag" id="activeUserRole">Kasir</span>
+      </div>
+
+      <!-- Tombol Refresh Cache -->
+      <button class="btn-icon" id="btnRefreshApp" title="Muat Ulang Data Terbaru">
+        <svg class="icon" viewBox="0 0 24 24"><polyline points="23 4 23 10 17 10"></polyline><polyline points="1 20 1 14 7 14"></polyline><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"></path></svg>
+      </button>
+
+      <!-- Tombol Logout -->
+      <button class="btn-icon" id="btnLogoutApp" title="Keluar Akun" style="display: none;">
+        <svg class="icon" viewBox="0 0 24 24"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path><polyline points="16 17 21 12 16 7"></polyline><line x1="21" y1="12" x2="9" y2="12"></line></svg>
+      </button>
+    </div>
+  </header>
+
+  <!-- ======================================================================
+       NAVBAR MENU (DESKTOP TAB & MOBILE DRAWER)
+       ====================================================================== -->
+  <nav class="main-nav-bar no-print" id="mainNavBar" style="display: none;">
+    <button class="nav-btn active" data-target="viewPos">
+      <svg class="icon" viewBox="0 0 24 24"><rect x="2" y="3" width="20" height="14" rx="2" ry="2"></rect><line x1="8" y1="21" x2="16" y2="21"></line><line x1="12" y1="17" x2="12" y2="21"></line></svg>
+      Kasir (POS)
+    </button>
+    <button class="nav-btn" data-target="viewRiwayat">
+      <svg class="icon" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>
+      Riwayat Transaksi
+    </button>
+    <button class="nav-btn" data-target="viewBarang">
+      <svg class="icon" viewBox="0 0 24 24"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"></path><polyline points="3.27 6.96 12 12.01 20.73 6.96"></polyline><line x1="12" y1="22.08" x2="12" y2="12"></line></svg>
+      Master Barang ATK
+    </button>
+    <button class="nav-btn master-only" data-target="viewPengaturan" id="navPengaturanBtn" style="display: none;">
+      <svg class="icon" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path></svg>
+      Pengaturan Invoice & Toko
+    </button>
+    <button class="nav-btn master-only" data-target="viewPengguna" id="navPenggunaBtn" style="display: none;">
+      <svg class="icon" viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M23 21v-2a4 4 0 0 0-3-3.87"></path><path d="M16 3.13a4 4 0 0 1 0 7.75"></path></svg>
+      Kelola Pengguna
+    </button>
+  </nav>
+
+  <!-- ======================================================================
+       CONTAINER UTAMA (APP CONTAINER)
+       ====================================================================== -->
+  <main class="app-container">
+
+    <!-- ------------------------------------------------------------------
+         1. VIEW: POS KASIR TRANSAKSI
+         ------------------------------------------------------------------ -->
+    <section class="view-section active" id="viewPos">
+      <div class="pos-layout">
+        <!-- Katalog Barang ATK -->
+        <div class="pos-catalog-card">
+          <div class="catalog-toolbar">
+            <div class="search-box-wrapper">
+              <svg class="icon search-icon-inside" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
+              <input type="text" id="posSearchInput" class="search-input" placeholder="Cari nama barang atau scan kode SKU (cth: Kertas, ATK-001)..." autocomplete="off">
+            </div>
+            <!-- Filter Kategori ATK -->
+            <div class="category-pills" id="categoryPillsList">
+              <button class="cat-pill active" data-cat="ALL">Semua Kategori</button>
+            </div>
+          </div>
+
+          <!-- Grid Daftar Barang -->
+          <div class="goods-grid" id="posGoodsGrid">
+            <div style="grid-column: 1/-1; text-align: center; padding: 2rem; color: var(--slate-400);">
+              Memuat katalog barang ATK...
+            </div>
+          </div>
+        </div>
+
+        <!-- Keranjang Belanja Kasir -->
+        <div class="pos-cart-card">
+          <div class="cart-header">
+            <div class="cart-title">
+              <svg class="icon" viewBox="0 0 24 24"><circle cx="9" cy="21" r="1"></circle><circle cx="20" cy="21" r="1"></circle><path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"></path></svg>
+              Keranjang Belanja
+            </div>
+            <button class="btn-icon" id="btnClearCart" title="Kosongkan Keranjang" style="color: var(--rose);">
+              <svg class="icon" viewBox="0 0 24 24"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>
+            </button>
+          </div>
+
+          <!-- Data Pelanggan -->
+          <div class="cart-customer-fields">
+            <div class="input-field-group">
+              <label class="input-label" for="cartCustomerName">Pelanggan</label>
+              <input type="text" id="cartCustomerName" class="input-compact" placeholder="Umum" value="Pelanggan Umum">
+            </div>
+            <div class="input-field-group">
+              <label class="input-label" for="cartCustomerWa">No. WhatsApp</label>
+              <input type="tel" id="cartCustomerWa" class="input-compact" placeholder="08123456789">
+            </div>
+          </div>
+
+          <!-- List Item di Keranjang -->
+          <div class="cart-items-list" id="cartItemsList">
+            <div class="cart-empty-state">
+              Keranjang masih kosong.<br>Klik barang di katalog untuk menambahkan.
+            </div>
+          </div>
+
+          <!-- Ringkasan Biaya & Diskon -->
+          <div class="cart-summary-box">
+            <div class="summary-row">
+              <span>Subtotal:</span>
+              <span id="cartSubtotalText" style="font-weight: 700;">Rp 0</span>
+            </div>
+            <div class="summary-row">
+              <span style="display: flex; align-items: center; gap: 0.35rem;">
+                Diskon (Rp):
+              </span>
+              <input type="number" id="cartDiscountInput" class="input-compact" style="width: 100px; text-align: right; padding: 0.2rem 0.4rem;" value="0" min="0">
+            </div>
+            <div class="summary-row total-grand">
+              <span>TOTAL AKHIR:</span>
+              <span class="grand-nominal" id="cartGrandTotalText">Rp 0</span>
+            </div>
+          </div>
+
+          <!-- Kalkulator Pembayaran Kasir -->
+          <div class="pay-calc-section">
+            <div class="input-field-group">
+              <label class="input-label">Metode Pembayaran</label>
+              <select id="cartPayMethod" class="input-compact">
+                <option value="Tunai">Tunai (Cash)</option>
+                <option value="QRIS">QRIS</option>
+                <option value="Transfer Bank">Transfer Bank</option>
+              </select>
+            </div>
+
+            <div class="input-field-group">
+              <label class="input-label">Uang Diterima (Bayar)</label>
+              <input type="number" id="cartCashPaidInput" class="input-compact" placeholder="Nominal bayar..." style="font-size: 1rem; font-weight: 700;">
+            </div>
+
+            <!-- Tombol Pecahan Cepat -->
+            <div class="quick-cash-row">
+              <button class="btn-quick-cash" id="btnCashPas">Uang Pas</button>
+              <button class="btn-quick-cash" data-cash="20000">20.000</button>
+              <button class="btn-quick-cash" data-cash="50000">50.000</button>
+              <button class="btn-quick-cash" data-cash="100000">100.000</button>
+            </div>
+
+            <div class="summary-row" style="margin-top: 0.4rem;">
+              <span style="font-weight: 700; color: var(--slate-700);">Kembalian:</span>
+              <span id="cartChangeText" style="font-size: 1rem; font-weight: 800; color: var(--emerald);">Rp 0</span>
+            </div>
+          </div>
+
+          <!-- Tombol Eksekusi Bayar & Cetak Invoice -->
+          <button class="btn-checkout-primary" id="btnSubmitCheckout" disabled>
+            <svg class="icon icon-lg" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"></polyline></svg>
+            Simpan & Buat Invoice
+          </button>
+        </div>
+      </div>
+    </section>
+
+    <!-- ------------------------------------------------------------------
+         2. VIEW: RIWAYAT TRANSAKSI & CETAK ULANG
+         ------------------------------------------------------------------ -->
+    <section class="view-section" id="viewRiwayat">
+      <!-- Sub-Navigasi Tab Riwayat: Daftar Nota vs Grafik Penjualan -->
+      <div class="history-subnav-bar">
+        <button type="button" class="history-subnav-btn active" id="btnSubnavTable" onclick="switchRiwayatSubView('table')">
+          <svg class="icon" viewBox="0 0 24 24"><line x1="8" y1="6" x2="21" y2="6"></line><line x1="8" y1="12" x2="21" y2="12"></line><line x1="8" y1="18" x2="21" y2="18"></line><line x1="3" y1="6" x2="3.01" y2="6"></line><line x1="3" y1="12" x2="3.01" y2="12"></line><line x1="3" y1="18" x2="3.01" y2="18"></line></svg>
+          Daftar Nota Transaksi
+        </button>
+        <button type="button" class="history-subnav-btn" id="btnSubnavChart" onclick="switchRiwayatSubView('chart')">
+          <svg class="icon" viewBox="0 0 24 24"><line x1="18" y1="20" x2="18" y2="10"></line><line x1="12" y1="20" x2="12" y2="4"></line><line x1="6" y1="20" x2="6" y2="14"></line></svg>
+          Grafik & Analisis Penjualan Barang
+        </button>
+      </div>
+
+      <!-- KONTEN TAB 1: TABEL NOTA TRANSAKSI -->
+      <div id="historyTableContainer" class="card-panel">
+        <div class="card-panel-header">
+          <div class="card-panel-title">
+            <svg class="icon" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>
+            Riwayat Transaksi Penjualan ATK
+          </div>
+          <div style="display: flex; gap: 0.5rem; flex-wrap: wrap;">
+            <input type="text" id="historySearchInput" class="input-compact" placeholder="Cari No. Invoice / Pelanggan..." style="width: 220px;">
+            <input type="date" id="historyDateInput" class="input-compact" style="width: 150px;">
+            <button class="btn-quick-cash" id="btnFilterHistory" style="padding: 0.45rem 0.85rem;">Cari</button>
+          </div>
+        </div>
+
+        <div class="table-responsive-wrapper">
+          <table class="fluid-table">
+            <thead>
+              <tr>
+                <th>No. Invoice</th>
+                <th>Tanggal & Waktu</th>
+                <th>Kasir</th>
+                <th>Pelanggan</th>
+                <th>Metode</th>
+                <th style="text-align: right;">Total Belanja</th>
+                <th style="text-align: center;">Aksi</th>
+              </tr>
+            </thead>
+            <tbody id="historyTableBody">
+              <tr>
+                <td colspan="7" style="text-align: center; color: var(--slate-400); padding: 2rem;">
+                  Memuat riwayat transaksi...
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- KONTEN TAB 2: GRAFIK & ANALISIS PENJUALAN BARANG -->
+      <div id="historyChartContainer" style="display: none;">
+        <!-- Filter Periode Cepat & Header Analisis -->
+        <div class="card-panel" style="margin-bottom: 1.25rem;">
+          <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1rem;">
+            <div>
+              <div style="font-weight: 800; font-size: 1.05rem; color: var(--slate-900); display: flex; align-items: center; gap: 0.5rem;">
+                <svg class="icon" style="color: var(--primary);" viewBox="0 0 24 24"><path d="M3 3v18h18"></path><path d="M18.7 8l-5.1 5.2-2.8-2.7L7 14.3"></path></svg>
+                Analisis Penjualan & Performa Barang ATK
+              </div>
+              <div style="font-size: 0.8rem; color: var(--slate-500); margin-top: 2px;">
+                Pantau tren pendapatan, barang terlaris (*fast-moving*), dan kontribusi penjualan secara *real-time*.
+              </div>
+            </div>
+
+            <!-- Chips Filter Periode -->
+            <div class="analytics-period-bar">
+              <button type="button" class="period-chip-btn active" data-period="all" onclick="changeAnalyticsPeriod('all')">Semua Waktu</button>
+              <button type="button" class="period-chip-btn" data-period="month" onclick="changeAnalyticsPeriod('month')">Bulan Ini</button>
+              <button type="button" class="period-chip-btn" data-period="7days" onclick="changeAnalyticsPeriod('7days')">7 Hari Terakhir</button>
+              <button type="button" class="period-chip-btn" data-period="today" onclick="changeAnalyticsPeriod('today')">Hari Ini</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- KPI Cards Grid (4 Kolom Proporsional) -->
+        <div class="kpi-metrics-grid">
+          <div class="kpi-metric-card">
+            <div class="kpi-metric-icon" style="background: rgba(37, 99, 235, 0.1); color: var(--primary);">
+              <svg class="icon" viewBox="0 0 24 24"><line x1="12" y1="1" x2="12" y2="23"></line><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"></path></svg>
+            </div>
+            <div>
+              <div class="kpi-metric-label">Total Omset Penjualan</div>
+              <div class="kpi-metric-val" id="kpiTotalOmset">Rp 0</div>
+            </div>
+          </div>
+
+          <div class="kpi-metric-card">
+            <div class="kpi-metric-icon" style="background: rgba(16, 185, 129, 0.1); color: var(--success);">
+              <svg class="icon" viewBox="0 0 24 24"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"></path></svg>
+            </div>
+            <div>
+              <div class="kpi-metric-label">Total Produk Terjual</div>
+              <div class="kpi-metric-val" id="kpiTotalQty">0 Pcs</div>
+            </div>
+          </div>
+
+          <div class="kpi-metric-card">
+            <div class="kpi-metric-icon" style="background: rgba(245, 158, 11, 0.1); color: var(--warning);">
+              <svg class="icon" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline></svg>
+            </div>
+            <div>
+              <div class="kpi-metric-label">Total Nota Transaksi</div>
+              <div class="kpi-metric-val" id="kpiTotalTrx">0 Nota</div>
+            </div>
+          </div>
+
+          <div class="kpi-metric-card">
+            <div class="kpi-metric-icon" style="background: rgba(139, 92, 246, 0.1); color: #8b5cf6;">
+              <svg class="icon" viewBox="0 0 24 24"><circle cx="12" cy="8" r="7"></circle><polyline points="8.21 13.89 7 23 12 20 17 23 15.79 13.88"></polyline></svg>
+            </div>
+            <div>
+              <div class="kpi-metric-label">Produk Terlaris Utama</div>
+              <div class="kpi-metric-val" id="kpiTopProduct" style="font-size: 0.95rem; word-break: break-word;">-</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Grid Visual Grafik Interaktif (Chart.js) -->
+        <div class="charts-grid-layout">
+          <!-- Grafik 1: Top 10 Produk Terlaris -->
+          <div class="card-panel chart-panel-card">
+            <div class="chart-panel-header">
+              <div class="chart-panel-title">
+                <svg class="icon" viewBox="0 0 24 24"><line x1="18" y1="20" x2="18" y2="10"></line><line x1="12" y1="20" x2="12" y2="4"></line><line x1="6" y1="20" x2="6" y2="14"></line></svg>
+                Top 10 Produk ATK Paling Laris (Qty Terjual)
+              </div>
+            </div>
+            <div class="chart-canvas-wrapper">
+              <canvas id="chartTopProductsCanvas"></canvas>
+            </div>
+          </div>
+
+          <!-- Grafik 2: Tren Omset Penjualan Harian -->
+          <div class="card-panel chart-panel-card">
+            <div class="chart-panel-header">
+              <div class="chart-panel-title">
+                <svg class="icon" viewBox="0 0 24 24"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"></polyline><polyline points="17 6 23 6 23 12"></polyline></svg>
+                Tren Pendapatan & Omset Harian (Rp)
+              </div>
+            </div>
+            <div class="chart-canvas-wrapper">
+              <canvas id="chartSalesTrendCanvas"></canvas>
+            </div>
+          </div>
+
+          <!-- Grafik 3: Komposisi Metode Pembayaran -->
+          <div class="card-panel chart-panel-card" style="grid-column: 1 / -1;">
+            <div class="chart-panel-header">
+              <div class="chart-panel-title">
+                <svg class="icon" viewBox="0 0 24 24"><rect x="1" y="4" width="22" height="16" rx="2" ry="2"></rect><line x1="1" y1="10" x2="23" y2="10"></line></svg>
+                Distribusi Nilai Transaksi per Metode Pembayaran
+              </div>
+            </div>
+            <div class="chart-canvas-wrapper" style="height: 220px;">
+              <canvas id="chartPaymentMethodsCanvas"></canvas>
+            </div>
+          </div>
+        </div>
+
+        <!-- Tabel Lengkap Peringkat Kinerja Seluruh Barang -->
+        <div class="card-panel" style="margin-top: 1.25rem;">
+          <div class="card-panel-header">
+            <div class="card-panel-title">
+              <svg class="icon" viewBox="0 0 24 24"><line x1="8" y1="6" x2="21" y2="6"></line><line x1="8" y1="12" x2="21" y2="12"></line><line x1="8" y1="18" x2="21" y2="18"></line></svg>
+              Tabel Peringkat Penjualan & Kontribusi Produk
+            </div>
+          </div>
+          <div class="table-responsive-wrapper">
+            <table class="fluid-table">
+              <thead>
+                <tr>
+                  <th style="width: 50px; text-align: center;">Rank</th>
+                  <th>Kode ATK</th>
+                  <th>Nama Produk Barang</th>
+                  <th style="text-align: center; width: 100px;">Qty Terjual</th>
+                  <th style="text-align: right; width: 140px;">Total Omset (Rp)</th>
+                  <th style="width: 180px;">Kontribusi Omset</th>
+                </tr>
+              </thead>
+              <tbody id="analyticsTableBody">
+                <tr>
+                  <td colspan="6" style="text-align: center; color: var(--slate-400); padding: 2rem;">
+                    Memuat data peringkat penjualan barang...
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ------------------------------------------------------------------
+         3. VIEW: MASTER BARANG ATK
+         ------------------------------------------------------------------ -->
+    <section class="view-section" id="viewBarang">
+      <div class="card-panel">
+        <div class="card-panel-header">
+          <div class="card-panel-title">
+            <svg class="icon" viewBox="0 0 24 24"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"></path></svg>
+            Master Data & Inventaris Barang ATK
+          </div>
+          <div style="display: flex; gap: 0.5rem;">
+            <button class="btn-quick-cash" id="btnTambahBarangModal" style="background: var(--primary); color: white; border: none; padding: 0.5rem 0.95rem; display: none;">
+              + Tambah Barang ATK
+            </button>
+          </div>
+        </div>
+
+        <div class="table-responsive-wrapper">
+          <table class="fluid-table">
+            <thead>
+              <tr>
+                <th>Kode / SKU</th>
+                <th>Nama Produk ATK</th>
+                <th>Kategori</th>
+                <th>Satuan</th>
+                <th style="text-align: right;" id="thHargaBeli" style="display: none;">Harga Beli</th>
+                <th style="text-align: right;">Harga Jual</th>
+                <th style="text-align: center;">Sisa Stok</th>
+                <th style="text-align: center;">Status</th>
+                <th style="text-align: center;" id="thAksiBarang" style="display: none;">Aksi</th>
+              </tr>
+            </thead>
+            <tbody id="goodsTableBody">
+              <tr>
+                <td colspan="9" style="text-align: center; color: var(--slate-400); padding: 2rem;">
+                  Memuat data inventaris barang...
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <!-- ------------------------------------------------------------------
+         4. VIEW: PENGATURAN TOKO & LIVE INVOICE PREVIEW (KHUSUS MASTER)
+         ------------------------------------------------------------------ -->
+    <section class="view-section" id="viewPengaturan">
+      <div class="card-panel">
+        <div class="card-panel-header">
+          <div class="card-panel-title">
+            <svg class="icon" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path></svg>
+            Kustomisasi Tampilan Invoice & Identitas Toko
+          </div>
+        </div>
+
+        <div class="settings-grid-layout">
+          <!-- Formulir Edit Pengaturan -->
+          <div class="settings-form-col">
+            <div class="form-group" id="groupLogoToko">
+              <label class="form-label">Logo Toko (Opsional untuk Faktur & Struk)</label>
+              <div style="display: flex; gap: 0.85rem; align-items: center; flex-wrap: wrap;">
+                <!-- Thumbnail Preview Logo -->
+                <div id="settingLogoPreviewBox" style="width: 58px; height: 58px; border: 1.5px dashed var(--slate-300); border-radius: var(--radius-md); display: flex; align-items: center; justify-content: center; background: var(--slate-50); overflow: hidden; flex-shrink: 0;">
+                  <img id="settingLogoPreviewImg" src="" style="max-width: 100%; max-height: 100%; object-fit: contain; display: none;" alt="Preview Logo">
+                  <span id="settingLogoEmptyText" style="color: var(--slate-400); font-size: 0.72rem; text-align: center; font-weight: 600;">Tanpa Logo</span>
+                </div>
+
+                <!-- Kontrol Upload & URL -->
+                <div style="flex: 1; min-width: 220px; display: flex; flex-direction: column; gap: 0.4rem;">
+                  <div style="display: flex; gap: 0.5rem; align-items: center;">
+                    <label for="settingLogoFileInput" class="btn-quick-cash" style="background: var(--slate-800); color: white; padding: 0.45rem 0.85rem; font-size: 0.82rem; cursor: pointer; border-radius: var(--radius-md); display: inline-flex; align-items: center; gap: 0.4rem;">
+                      <svg class="icon icon-sm" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="17 8 12 3 7 8"></polyline><line x1="12" y1="3" x2="12" y2="15"></line></svg>
+                      Unggah File Logo
+                    </label>
+                    <input type="file" id="settingLogoFileInput" accept="image/*" style="display: none;">
+                    <button type="button" class="btn-quick-cash" id="btnHapusLogo" style="background: var(--white); color: var(--danger); border: 1px solid var(--slate-300); padding: 0.45rem 0.75rem; font-size: 0.82rem; display: none;">
+                      Hapus Logo
+                    </button>
+                  </div>
+                  <input type="text" id="settingLogoUrl" class="form-control" placeholder="Atau tempel URL gambar logo di sini (https://...)" style="font-size: 0.82rem; padding: 0.45rem 0.7rem;">
+                </div>
+              </div>
+              <small style="color: var(--slate-500); font-size: 0.75rem; margin-top: 2px;">
+                Mendukung PNG transparan, JPG, WebP. Otomatis tampil pada kop Faktur A5 & Struk Termal.
+              </small>
+            </div>
+
+            <div class="form-group">
+              <label class="form-label" for="settingNamaToko">Nama Toko ATK</label>
+              <input type="text" id="settingNamaToko" class="form-control" placeholder="Contoh: MAH POS - Toko ATK">
+            </div>
+
+            <div class="form-group">
+              <label class="form-label" for="settingSlogan">Slogan / Sub-Header Toko</label>
+              <input type="text" id="settingSlogan" class="form-control" placeholder="Contoh: Pusat Alat Tulis Kantor & Fotocopy">
+            </div>
+
+            <div class="form-group">
+              <label class="form-label" for="settingAlamat">Alamat Toko</label>
+              <textarea id="settingAlamat" class="form-control" placeholder="Alamat lengkap toko ATK..."></textarea>
+            </div>
+
+            <div class="form-group">
+              <label class="form-label" for="settingTelepon">Nomor Telepon / WhatsApp Toko</label>
+              <input type="text" id="settingTelepon" class="form-control" placeholder="081234567890">
+            </div>
+
+            <div class="form-group">
+              <label class="form-label" for="settingFooterNota">Catatan Kaki Nota (Footer Note)</label>
+              <textarea id="settingFooterNota" class="form-control" placeholder="Catatan kaki struk, misal: Barang yang sudah dibeli tidak dapat ditukar..."></textarea>
+            </div>
+
+            <div class="form-group">
+              <label class="form-label" for="settingNamaPenandatangan">Nama Penandatangan / Hormat Kami (Default Faktur A5)</label>
+              <input type="text" id="settingNamaPenandatangan" class="form-control" placeholder="Contoh: Heni Ratna Suryani (Kosongkan jika ingin mengikuti username login)">
+              <small style="color: var(--slate-500); font-size: 0.76rem; margin-top: 2px;">
+                Nama ini otomatis tampil pada kolom "Hormat Kami / Kasir" faktur A5 dan tetap dapat diklik/diedit langsung di layar invoice.
+              </small>
+            </div>
+
+            <div class="form-group">
+              <label class="form-label" for="settingFormatDefault">Format Default Cetak</label>
+              <select id="settingFormatDefault" class="form-control">
+                <option value="thermal">Struk Kasir Termal (80mm)</option>
+                <option value="thermal58">Struk Kasir Termal (58mm)</option>
+                <option value="label">Label Packing (Nama, Item, Qty)</option>
+                <option value="a5">Faktur / Nota Formal Standar (A5 / A4)</option>
+              </select>
+            </div>
+
+            <div class="form-group" id="groupTemaFaktur">
+              <label class="form-label" for="settingTemaFaktur">Pilihan Desain / Tampilan Faktur (Tema A5)</label>
+              <select id="settingTemaFaktur" class="form-control">
+                <option value="modern">Modern Navy (Standar Profesional)</option>
+                <option value="classic">Klasik Formal (Monokrom / Hemat Tinta)</option>
+                <option value="emerald">Minimalis Clean (Emerald Fresh)</option>
+                <option value="warm">Warm Retail (Amber Elegan)</option>
+              </select>
+              <small style="color: var(--slate-500); font-size: 0.76rem; margin-top: 2px;">
+                Desain tampilan otomatis diterapkan pada Faktur A5, cetak printer, dan ekspor PDF.
+              </small>
+            </div>
+
+            <button class="btn-checkout-primary" id="btnSaveSettings" style="margin-top: 1rem;">
+              <svg class="icon" viewBox="0 0 24 24"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"></path><polyline points="17 21 17 13 7 13 7 21"></polyline><polyline points="7 3 7 8 15 8"></polyline></svg>
+              Simpan Pengaturan Invoice
+            </button>
+
+            <!-- Kartu Koneksi Printer Bluetooth (Dual Mode: Windows & Android) -->
+            <div class="card" style="margin-top: 1.5rem; padding: 1.25rem; border: 1.5px solid var(--slate-200); border-radius: 12px; background: #fff;">
+              <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.75rem;">
+                <div style="font-weight: 700; font-size: 0.95rem; color: var(--slate-900); display: flex; align-items: center; gap: 0.45rem;">
+                  <svg class="icon" viewBox="0 0 24 24"><polyline points="6.5 6.5 17.5 17.5 12 23 12 1 17.5 6.5 6.5 17.5"></polyline></svg>
+                  Printer Bluetooth Thermal Kasir
+                </div>
+                <span id="btStatusBadgeSettings" class="badge-bt badge-bt-connected" style="background: #e0f2fe; color: #0369a1; border-color: #bae6fd;">
+                  <span class="bt-dot" style="background: #0284c7;"></span> <span id="btStatusTextSettings">Siap Digunakan</span>
+                </span>
+              </div>
+              <p style="font-size: 0.78rem; color: var(--slate-600); margin-bottom: 0.85rem; line-height: 1.45;">
+                Mendukung printer thermal Bluetooth (58mm/80mm) di <strong>Laptop/PC Windows</strong> (via Windows Print) dan <strong>HP Android</strong> (via RawBT 1-Detik).
+              </p>
+              <div style="display: flex; gap: 0.5rem; flex-wrap: wrap;">
+                <button type="button" class="btn btn-secondary" id="btnTestWindowsPrint" style="font-size: 0.8rem; display: inline-flex; align-items: center; gap: 0.4rem; padding: 0.5rem 0.85rem;">
+                  <svg class="icon icon-sm" viewBox="0 0 24 24"><polyline points="6 9 6 2 18 2 18 9"></polyline><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"></path><rect x="6" y="14" width="12" height="8"></rect></svg>
+                  Tes Cetak (Windows PC)
+                </button>
+                <button type="button" class="btn btn-secondary" id="btnTestRawBtPrint" style="font-size: 0.8rem; display: inline-flex; align-items: center; gap: 0.4rem; padding: 0.5rem 0.85rem; color: #0284c7; border-color: #bae6fd;">
+                  <svg class="icon icon-sm" viewBox="0 0 24 24"><polyline points="6.5 6.5 17.5 17.5 12 23 12 1 17.5 6.5 6.5 17.5"></polyline></svg>
+                  Tes Cetak RawBT (Android)
+                </button>
+                <button type="button" class="btn btn-secondary" id="btnOpenBtGuide" style="font-size: 0.8rem; display: inline-flex; align-items: center; gap: 0.4rem; padding: 0.5rem 0.85rem;">
+                  <svg class="icon icon-sm" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"></circle><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"></path><line x1="12" y1="17" x2="12.01" y2="17"></line></svg>
+                  Panduan Koneksi
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <!-- Live Preview Sticky Card -->
+          <div class="preview-sticky-card">
+            <div style="font-weight: 800; font-size: 0.95rem; color: var(--slate-900); margin-bottom: 0.75rem; display: flex; align-items: center; gap: 0.45rem;">
+              <svg class="icon" viewBox="0 0 24 24"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle></svg>
+              Live Pratinjau Invoice Real-Time
+            </div>
+            <div style="font-size: 0.76rem; color: var(--slate-500); margin-bottom: 0.75rem;">
+              Perubahan pada formulir di sebelah kiri langsung diperbarui di sini secara otomatis.
+            </div>
+
+            <!-- Area Live Preview Nota -->
+            <div id="liveInvoicePreview" class="invoice-container format-thermal">
+              <!-- Rendered via JS -->
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ------------------------------------------------------------------
+         5. VIEW: KELOLA PENGGUNA (KHUSUS MASTER)
+         ------------------------------------------------------------------ -->
+    <section class="view-section" id="viewPengguna">
+      <div class="card-panel">
+        <div class="card-panel-header">
+          <div class="card-panel-title">
+            <svg class="icon" viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle></svg>
+            Kelola Akun Pengguna (Master & Kasir)
+          </div>
+          <button class="btn-quick-cash" id="btnTambahPenggunaModal" style="background: var(--primary); color: white; border: none; padding: 0.5rem 0.95rem;">
+            + Tambah Akun Baru
+          </button>
+        </div>
+
+        <div class="table-responsive-wrapper">
+          <table class="fluid-table">
+            <thead>
+              <tr>
+                <th>ID</th>
+                <th>Username</th>
+                <th>Nama Lengkap</th>
+                <th>Peran</th>
+                <th>Status</th>
+                <th style="text-align: center;">Aksi</th>
+              </tr>
+            </thead>
+            <tbody id="usersTableBody">
+              <tr>
+                <td colspan="6" style="text-align: center; color: var(--slate-400); padding: 2rem;">
+                  Memuat data akun pengguna...
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+  </main>
+
+  <!-- ======================================================================
+       MODAL 1: LOGIN PENGGUNA (MASTER & KASIR)
+       ====================================================================== -->
+  <div class="modal-overlay active" id="loginModal">
+    <div class="modal-card" style="max-width: 420px;">
+      <div class="modal-header">
+        <div class="modal-title">
+          <div class="brand-logo-badge" style="font-size: 0.9rem; padding: 0.25rem 0.5rem;">MAH</div>
+          Masuk ke MAH POS
+        </div>
+      </div>
+      <div class="modal-body">
+        <p style="font-size: 0.85rem; color: var(--slate-500); margin-bottom: 1.25rem;">
+          Silakan masuk menggunakan akun kasir atau master toko Anda.
+        </p>
+        <form id="loginForm" onsubmit="return false;">
+          <div class="form-group">
+            <label class="form-label" for="loginUsername">Username</label>
+            <input type="text" id="loginUsername" class="form-control" placeholder="cth: master atau kasir1" required autocomplete="username">
+          </div>
+          <div class="form-group">
+            <label class="form-label" for="loginPassword">Kata Sandi (Password)</label>
+            <input type="password" id="loginPassword" class="form-control" placeholder="••••••••" required autocomplete="current-password">
+          </div>
+          <button type="submit" class="btn-checkout-primary" id="btnLoginSubmit" style="margin-top: 1.25rem;">
+            Masuk ke Aplikasi
+          </button>
+          <div style="margin-top: 1rem; text-align: center;">
+            <button type="button" id="btnToggleApiConfig" style="font-size: 0.78rem; color: var(--slate-400); background: none; border: none; cursor: pointer; text-decoration: underline;">
+              ⚙️ Pengaturan Koneksi Backend (URL Web App GAS)
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <!-- ======================================================================
+       MODAL 2: PRATINJAU INVOICE, CETAK, PDF & KIRIM WHATSAPP
+       ====================================================================== -->
+  <div class="modal-overlay" id="modalInvoice">
+    <div class="modal-card" style="max-width: 620px;">
+      <div class="modal-header no-print">
+        <div class="modal-title">
+          <svg class="icon" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line><polyline points="10 9 9 9 8 9"></polyline></svg>
+          Invoice Transaksi Penjualan
+        </div>
+        <div style="display: flex; gap: 0.5rem; align-items: center;">
+          <!-- Indikator Status Bluetooth di Modal Invoice -->
+          <span id="modalBtBadge" class="badge-bt badge-bt-disconnected" style="cursor: pointer;" title="Klik untuk menghubungkan printer Bluetooth">
+            <span class="bt-dot"></span> <span id="modalBtText">BT Off</span>
+          </span>
+          <!-- Pilihan Format Preview -->
+          <select id="invoiceFormatToggle" class="input-compact" style="width: 160px;">
+            <option value="thermal">Struk Termal (80mm)</option>
+            <option value="thermal58">Struk Termal (58mm)</option>
+            <option value="label">Label Packing (Item & Qty)</option>
+            <option value="a5">Faktur Nota A5</option>
+          </select>
+          <!-- Pilihan Tema Preview Faktur A5 -->
+          <select id="invoiceThemeToggle" class="input-compact" style="width: 140px; display: none;">
+            <option value="modern">Modern Navy</option>
+            <option value="classic">Klasik Formal</option>
+            <option value="emerald">Minimalis Clean</option>
+            <option value="warm">Warm Retail</option>
+          </select>
+          <button class="btn-icon" id="btnCloseInvoiceModal" title="Tutup Modal">
+            <svg class="icon" viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+          </button>
+        </div>
+      </div>
+
+      <div class="modal-body" style="background: var(--slate-100); padding: 1.5rem 1rem;">
+        <!-- Area Konten Invoice Nyata yang akan dicetak dan diekspor ke PDF -->
+        <div id="invoicePrintArea" class="invoice-container format-thermal">
+          <!-- Diisi dinamis oleh renderer JS -->
+        </div>
+      </div>
+
+      <div class="modal-footer no-print">
+        <!-- 📡 Tombol Cetak Bluetooth Langsung (1-Click) -->
+        <button class="btn-bluetooth-print" id="btnBluetoothPrintModal" title="Cetak Langsung ke Printer Bluetooth Thermal (1-Click)">
+          <svg class="icon" viewBox="0 0 24 24"><polyline points="6.5 6.5 17.5 17.5 12 23 12 1 17.5 6.5 6.5 17.5"></polyline></svg>
+          Cetak Bluetooth
+        </button>
+
+        <!-- 💬 Tombol WhatsApp Share Langsung -->
+        <button class="btn-whatsapp-share" id="btnShareWhatsApp">
+          <svg class="icon" viewBox="0 0 24 24"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"></path></svg>
+          Kirim ke WhatsApp
+        </button>
+
+        <!-- 📥 Unduh Berkas PDF -->
+        <button class="btn-download-pdf" id="btnDownloadInvoicePdf">
+          <svg class="icon" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
+          Unduh PDF
+        </button>
+
+        <!-- 🖨️ Cetak Struk (window.print) -->
+        <button class="btn-print" id="btnPrintInvoice">
+          <svg class="icon" viewBox="0 0 24 24"><polyline points="6 9 6 2 18 2 18 9"></polyline><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"></path><rect x="6" y="14" width="12" height="8"></rect></svg>
+          Cetak Struk
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ======================================================================
+       MODAL PANDUAN KONEKSI PRINTER BLUETOOTH
+       ====================================================================== -->
+  <div class="modal-overlay" id="modalBluetoothGuide">
+    <div class="modal-card" style="max-width: 540px;">
+      <div class="modal-header">
+        <div class="modal-title">
+          <svg class="icon" viewBox="0 0 24 24"><polyline points="6.5 6.5 17.5 17.5 12 23 12 1 17.5 6.5 6.5 17.5"></polyline></svg>
+          Panduan Koneksi Printer Bluetooth
+        </div>
+        <button class="btn-icon" id="btnCloseBtGuideModal" title="Tutup Modal">
+          <svg class="icon" viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+        </button>
+      </div>
+      <div class="modal-body" style="padding: 1.25rem;">
+        <div style="background: #f0fdf4; border: 1px solid #bbf7d0; border-radius: 8px; padding: 0.85rem; margin-bottom: 1.2rem; font-size: 0.82rem; color: #166534; line-height: 1.45;">
+          <strong>💡 Tips Praktis Kasir:</strong> Anda dapat mencetak struk dan label langsung ke printer Bluetooth thermal (58mm / 80mm) secara lancar menggunakan panduan di bawah ini:
+        </div>
+
+        <div style="margin-bottom: 1.25rem; background: var(--slate-50); padding: 0.85rem; border-radius: 8px; border: 1px solid var(--slate-200);">
+          <h4 style="font-size: 0.92rem; font-weight: 700; color: var(--slate-900); margin-bottom: 0.4rem; display: flex; align-items: center; gap: 0.4rem;">
+            💻 Untuk Laptop / PC Windows (Rekomendasi):
+          </h4>
+          <ol style="font-size: 0.8rem; color: var(--slate-700); margin-left: 1.2rem; line-height: 1.55;">
+            <li>Sambungkan printer Bluetooth di Windows: <strong>Settings ➔ Bluetooth & devices ➔ Add device</strong> (PIN biasanya <code>0000</code> atau <code>1234</code>).</li>
+            <li>Di aplikasi MAH POS, cukup klik tombol <strong>"Cetak Struk"</strong> atau <strong>"Cetak Bluetooth"</strong>.</li>
+            <li>Pada pilihan <em>Destination (Tujuan Cetak)</em> di Chrome, pilih printer Bluetooth Anda.</li>
+            <li>Google Chrome akan otomatis mengingat printer tersebut selamanya (transaksi berikutnya langsung 1-klik)!</li>
+          </ol>
+        </div>
+
+        <div style="background: var(--slate-50); padding: 0.85rem; border-radius: 8px; border: 1px solid var(--slate-200);">
+          <h4 style="font-size: 0.92rem; font-weight: 700; color: var(--slate-900); margin-bottom: 0.4rem; display: flex; align-items: center; gap: 0.4rem;">
+            📱 Untuk HP / Tablet Android (RawBT 1-Detik):
+          </h4>
+          <ol style="font-size: 0.8rem; color: var(--slate-700); margin-left: 1.2rem; line-height: 1.55;">
+            <li>Pasang aplikasi gratis <strong>RawBT Print Service</strong> dari Google Play Store di HP kasir.</li>
+            <li>Buka RawBT sekali dan sambungkan printer Bluetooth Anda.</li>
+            <li>Di MAH POS, klik tombol <strong>"Cetak Bluetooth"</strong> ➔ struk/label langsung keluar tercetak otomatis tanpa pop-up!</li>
+          </ol>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" id="btnGuideTestWindows">
+          <svg class="icon icon-sm" viewBox="0 0 24 24"><polyline points="6 9 6 2 18 2 18 9"></polyline><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"></path><rect x="6" y="14" width="12" height="8"></rect></svg>
+          Tes Cetak (Windows)
+        </button>
+        <button type="button" class="btn btn-primary" id="btnGuideClose">
+          Tutup Panduan
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ======================================================================
+       MODAL 3: TAMBAH / EDIT BARANG ATK (KHUSUS MASTER)
+       ====================================================================== -->
+  <div class="modal-overlay" id="modalBarangForm">
+    <div class="modal-card" style="max-width: 500px;">
+      <div class="modal-header">
+        <div class="modal-title" id="barangModalTitle">Tambah Barang ATK Baru</div>
+        <button class="btn-icon" id="btnCloseBarangModal">
+          <svg class="icon" viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+        </button>
+      </div>
+      <div class="modal-body">
+        <form id="formBarang" onsubmit="return false;">
+          <input type="hidden" id="barangFormKodeOld">
+          <div class="form-group">
+            <label class="form-label" for="barangFormKode">Kode / SKU (Biarkan kosong untuk auto-generate)</label>
+            <input type="text" id="barangFormKode" class="form-control" placeholder="cth: ATK-011">
+          </div>
+          <div class="form-group">
+            <label class="form-label" for="barangFormNama">Nama Produk ATK *</label>
+            <input type="text" id="barangFormNama" class="form-control" placeholder="cth: Kertas HVS A4 80gr Sinar Dunia" required>
+          </div>
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem;">
+            <div class="form-group">
+              <label class="form-label" for="barangFormKategori">Kategori</label>
+              <input type="text" id="barangFormKategori" class="form-control" placeholder="Kertas, Pulpen, dll" list="kategoriDataList">
+              <datalist id="kategoriDataList"></datalist>
+            </div>
+            <div class="form-group">
+              <label class="form-label" for="barangFormSatuan">Satuan</label>
+              <input type="text" id="barangFormSatuan" class="form-control" placeholder="Pcs, Rim, Kotak" value="Pcs">
+            </div>
+          </div>
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem;">
+            <div class="form-group">
+              <label class="form-label" for="barangFormHargaBeli">Harga Beli / Modal (Rp)</label>
+              <input type="number" id="barangFormHargaBeli" class="form-control" placeholder="0" min="0">
+            </div>
+            <div class="form-group">
+              <label class="form-label" for="barangFormHargaJual">Harga Jual Kasir (Rp) *</label>
+              <input type="number" id="barangFormHargaJual" class="form-control" placeholder="0" min="0" required>
+            </div>
+          </div>
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem;">
+            <div class="form-group">
+              <label class="form-label" for="barangFormStok">Sisa Stok Saat Ini</label>
+              <input type="number" id="barangFormStok" class="form-control" placeholder="0" min="0" value="10">
+            </div>
+            <div class="form-group">
+              <label class="form-label" for="barangFormMinStok">Batas Min. Stok (Peringatan)</label>
+              <input type="number" id="barangFormMinStok" class="form-control" placeholder="5" min="0" value="5">
+            </div>
+          </div>
+          <div style="display: flex; gap: 0.75rem; margin-top: 1.25rem;">
+            <button type="button" class="btn-delete-modal" id="btnDeleteBarangModal" style="display: none;">
+              <svg class="icon icon-sm" viewBox="0 0 24 24"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>
+              Hapus Barang
+            </button>
+            <button type="submit" class="btn-checkout-primary" id="btnSubmitBarang" style="flex: 1;">
+              Simpan Data Barang
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <!-- ======================================================================
+       MODAL 4: TAMBAH / EDIT PENGGUNA (KHUSUS MASTER)
+       ====================================================================== -->
+  <div class="modal-overlay" id="modalPenggunaForm">
+    <div class="modal-card" style="max-width: 440px;">
+      <div class="modal-header">
+        <div class="modal-title" id="penggunaModalTitle">Tambah Akun Pengguna</div>
+        <button class="btn-icon" id="btnClosePenggunaModal">
+          <svg class="icon" viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+        </button>
+      </div>
+      <div class="modal-body">
+        <form id="formPengguna" onsubmit="return false;">
+          <div class="form-group">
+            <label class="form-label" for="userFormUsername">Username *</label>
+            <input type="text" id="userFormUsername" class="form-control" placeholder="cth: kasir2" required>
+          </div>
+          <div class="form-group">
+            <label class="form-label" for="userFormNama">Nama Lengkap *</label>
+            <input type="text" id="userFormNama" class="form-control" placeholder="cth: Siti Rahma" required>
+          </div>
+          <div class="form-group">
+            <label class="form-label" for="userFormPassword">Kata Sandi (Kosongkan jika tidak diubah)</label>
+            <input type="password" id="userFormPassword" class="form-control" placeholder="••••••••">
+          </div>
+          <div class="form-group">
+            <label class="form-label" for="userFormPeran">Peran Pengguna</label>
+            <select id="userFormPeran" class="form-control">
+              <option value="Kasir">Kasir</option>
+              <option value="Master">Master (Pemilik Toko)</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label class="form-label" for="userFormStatus">Status Akun</label>
+            <select id="userFormStatus" class="form-control">
+              <option value="TRUE">Aktif</option>
+              <option value="FALSE">Nonaktif</option>
+            </select>
+          </div>
+          <button type="submit" class="btn-checkout-primary" id="btnSubmitPengguna" style="margin-top: 1rem;">
+            Simpan Akun
+          </button>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <!-- SCRIPT LOGIKA APLIKASI (js.html) -->
+  
+  <!-- MODAL: KONFIGURASI BACKEND REST API (VERCEL <-> GAS) -->
+  <div class="modal-overlay" id="modalApiConfig">
+    <div class="modal-card" style="max-width: 480px;">
+      <div class="modal-header">
+        <div class="modal-title">
+          <svg class="icon" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path></svg>
+          Koneksi Backend Google Apps Script
+        </div>
+        <button class="btn-icon" id="btnCloseApiConfig">&times;</button>
+      </div>
+      <div class="modal-body">
+        <p style="font-size: 0.85rem; color: var(--slate-500); margin-bottom: 1rem;">
+          Hubungkan Frontend Vercel ke URL Web App Google Apps Script toko Anda.
+        </p>
+        <div class="form-group">
+          <label class="form-label" for="cfgApiUrl">URL Web App Google Apps Script</label>
+          <input type="text" id="cfgApiUrl" class="form-control" placeholder="https://script.google.com/macros/s/.../exec">
+        </div>
+        <div class="form-group">
+          <label class="form-label" for="cfgApiSecret">API Secret Key</label>
+          <input type="text" id="cfgApiSecret" class="form-control" placeholder="MAH-POS-SECRET-2026">
+        </div>
+        <button type="button" class="btn-checkout-primary" id="btnSaveApiConfig" style="margin-top: 1rem;">
+          Simpan Konfigurasi
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <script src="js/app.js"></script>
+  <script>
+    // Inisialisasi modal konfigurasi endpoint API
+    document.addEventListener('DOMContentLoaded', function() {
+      var btnOpen = document.getElementById('btnToggleApiConfig');
+      var modal = document.getElementById('modalApiConfig');
+      var btnClose = document.getElementById('btnCloseApiConfig');
+      var btnSave = document.getElementById('btnSaveApiConfig');
+      var inputUrl = document.getElementById('cfgApiUrl');
+      var inputSecret = document.getElementById('cfgApiSecret');
+
+      if (btnOpen && modal) {
+        btnOpen.addEventListener('click', function() {
+          inputUrl.value = localStorage.getItem('MAH_POS_API_URL') || (window.APP_CONFIG && window.APP_CONFIG.API_URL) || '';
+          inputSecret.value = localStorage.getItem('MAH_POS_API_SECRET') || 'MAH-POS-SECRET-2026';
+          modal.classList.add('active');
+        });
+      }
+      if (btnClose && modal) {
+        btnClose.addEventListener('click', function() {
+          modal.classList.remove('active');
+        });
+      }
+      if (btnSave && modal) {
+        btnSave.addEventListener('click', function() {
+          var u = (inputUrl.value || '').trim();
+          var s = (inputSecret.value || '').trim();
+          if (u) {
+            localStorage.setItem('MAH_POS_API_URL', u);
+            localStorage.setItem('MAH_POS_API_SECRET', s || 'MAH-POS-SECRET-2026');
+            if (window.APP_CONFIG) {
+              window.APP_CONFIG.API_URL = u;
+              window.APP_CONFIG.API_SECRET = s || 'MAH-POS-SECRET-2026';
+            }
+            alert('Konfigurasi URL Google Apps Script berhasil disimpan!');
+            modal.classList.remove('active');
+          } else {
+            alert('URL Web App tidak boleh kosong.');
+          }
+        });
+      }
+    });
+  </script>
+
+</body>
+</html>
