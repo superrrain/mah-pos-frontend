@@ -362,14 +362,69 @@ const GasBridge = {
       fetchInitialData(true);
     });
 
-    // 4. Tab Navigation (Instant In-Memory Switching)
-    var navButtons = document.querySelectorAll('.main-nav-bar .nav-btn');
+    // 4. Tab Navigation (Instant In-Memory Switching - Desktop & Mobile Dock)
+    var navButtons = document.querySelectorAll('.nav-btn, .mobile-dock-btn');
     navButtons.forEach(function (btn) {
       btn.addEventListener('click', function () {
         var targetId = btn.getAttribute('data-target');
-        switchView(targetId);
+        if (targetId) switchView(targetId);
       });
     });
+
+    // 4.B Payment Method Pills (Chili POS Style)
+    var paySelect = document.getElementById('cartPayMethod');
+    var payPills = document.querySelectorAll('.pay-method-pill');
+    payPills.forEach(function (pill) {
+      pill.addEventListener('click', function () {
+        var method = pill.getAttribute('data-method');
+        if (paySelect) {
+          paySelect.value = method;
+          var evt = new Event('change');
+          paySelect.dispatchEvent(evt);
+        }
+        payPills.forEach(function (p) { p.classList.remove('active'); });
+        pill.classList.add('active');
+      });
+    });
+    if (paySelect) {
+      paySelect.addEventListener('change', function () {
+        var val = paySelect.value;
+        payPills.forEach(function (p) {
+          if (p.getAttribute('data-method') === val) p.classList.add('active');
+          else p.classList.remove('active');
+        });
+      });
+    }
+
+    // 4.C Mobile Cart Drawer Controls (Slide-Up Bottom Sheet)
+    var btnOpenCart = document.getElementById('btnOpenMobileCart');
+    var btnCloseCart = document.getElementById('btnCloseMobileCart');
+    var cartBackdrop = document.getElementById('cartDrawerBackdrop');
+    var posCartCard = document.getElementById('posCartCard');
+
+    function openMobileCartDrawer() {
+      if (posCartCard) posCartCard.classList.add('mobile-open');
+      if (cartBackdrop) cartBackdrop.classList.add('active');
+    }
+
+    function closeMobileCartDrawer() {
+      if (posCartCard) posCartCard.classList.remove('mobile-open');
+      if (cartBackdrop) cartBackdrop.classList.remove('active');
+    }
+
+    if (btnOpenCart) btnOpenCart.addEventListener('click', openMobileCartDrawer);
+    if (btnCloseCart) btnCloseCart.addEventListener('click', closeMobileCartDrawer);
+    if (cartBackdrop) cartBackdrop.addEventListener('click', closeMobileCartDrawer);
+
+    // 4.D Mobile Header Quick Actions
+    var btnRefMob = document.getElementById('btnRefreshAppMobile');
+    if (btnRefMob) {
+      btnRefMob.addEventListener('click', function () { fetchInitialData(true); });
+    }
+    var btnLogMob = document.getElementById('btnLogoutAppMobile');
+    if (btnLogMob) {
+      btnLogMob.addEventListener('click', handleLogout);
+    }
 
     // 5. Search & Filter POS Katalog
     document.getElementById('posSearchInput').addEventListener('input', function (e) {
@@ -691,23 +746,49 @@ const GasBridge = {
     AppState.currentUser = user;
     document.getElementById('loginModal').classList.remove('active');
 
-    // Update Navbar
-    document.getElementById('userInfoBox').style.display = 'flex';
-    document.getElementById('btnLogoutApp').style.display = 'inline-flex';
-    document.getElementById('mainNavBar').style.display = 'flex';
+    // Update Navbar (Desktop & Mobile)
+    var userBox = document.getElementById('userInfoBox');
+    if (userBox) userBox.style.display = 'flex';
+    var btnLogout = document.getElementById('btnLogoutApp');
+    if (btnLogout) btnLogout.style.display = 'inline-flex';
+    var mainNav = document.getElementById('mainNavBar');
+    if (mainNav) mainNav.style.display = 'flex';
 
-    document.getElementById('activeUserName').textContent = user.namaLengkap || user.username;
+    var nameEl = document.getElementById('activeUserName');
+    if (nameEl) nameEl.textContent = user.namaLengkap || user.username;
     var roleBadge = document.getElementById('activeUserRole');
-    roleBadge.textContent = user.peran;
-    roleBadge.className = 'role-tag ' + (user.peran.toLowerCase() === 'master' ? 'master' : '');
+    if (roleBadge) {
+      roleBadge.textContent = user.peran;
+      roleBadge.className = 'role-tag ' + (user.peran.toLowerCase() === 'master' ? 'master' : '');
+    }
+
+    // Update Mobile Header & Bottom Dock
+    var mobPill = document.getElementById('mobileUserPill');
+    if (mobPill) mobPill.style.display = 'flex';
+    var mobName = document.getElementById('mobileUserName');
+    if (mobName) mobName.textContent = user.namaLengkap || user.username;
+    var mobLogout = document.getElementById('btnLogoutAppMobile');
+    if (mobLogout) mobLogout.style.display = 'inline-flex';
+    var mobDock = document.getElementById('mobileBottomDock');
+    if (mobDock) mobDock.style.display = 'flex';
 
     // Tampilkan menu khusus Master jika peran = Master
     var isMaster = (user.peran.toLowerCase() === 'master');
-    document.getElementById('navPengaturanBtn').style.display = isMaster ? 'inline-flex' : 'none';
-    document.getElementById('navPenggunaBtn').style.display = isMaster ? 'inline-flex' : 'none';
-    document.getElementById('btnTambahBarangModal').style.display = isMaster ? 'inline-block' : 'none';
-    document.getElementById('thHargaBeli').style.display = isMaster ? 'table-cell' : 'none';
-    document.getElementById('thAksiBarang').style.display = isMaster ? 'table-cell' : 'none';
+    var navPengaturan = document.getElementById('navPengaturanBtn');
+    if (navPengaturan) navPengaturan.style.display = isMaster ? 'flex' : 'none';
+    var navPengguna = document.getElementById('navPenggunaBtn');
+    if (navPengguna) navPengguna.style.display = isMaster ? 'flex' : 'none';
+    var mobPengaturan = document.getElementById('mobileNavPengaturanBtn');
+    if (mobPengaturan) mobPengaturan.style.display = isMaster ? 'flex' : 'none';
+    var mobPengguna = document.getElementById('mobileNavPenggunaBtn');
+    if (mobPengguna) mobPengguna.style.display = isMaster ? 'flex' : 'none';
+
+    var btnAddGood = document.getElementById('btnTambahBarangModal');
+    if (btnAddGood) btnAddGood.style.display = isMaster ? 'inline-block' : 'none';
+    var thBeli = document.getElementById('thHargaBeli');
+    if (thBeli) thBeli.style.display = isMaster ? 'table-cell' : 'none';
+    var thAksi = document.getElementById('thAksiBarang');
+    if (thAksi) thAksi.style.display = isMaster ? 'table-cell' : 'none';
 
     // Muat data aplikasi
     fetchInitialData(false);
@@ -719,9 +800,20 @@ const GasBridge = {
         localStorage.removeItem('mah_pos_session');
       } catch (e) { }
       AppState.currentUser = null;
-      document.getElementById('userInfoBox').style.display = 'none';
-      document.getElementById('btnLogoutApp').style.display = 'none';
-      document.getElementById('mainNavBar').style.display = 'none';
+      var userBox = document.getElementById('userInfoBox');
+      if (userBox) userBox.style.display = 'none';
+      var btnLogout = document.getElementById('btnLogoutApp');
+      if (btnLogout) btnLogout.style.display = 'none';
+      var mainNav = document.getElementById('mainNavBar');
+      if (mainNav) mainNav.style.display = 'none';
+
+      var mobPill = document.getElementById('mobileUserPill');
+      if (mobPill) mobPill.style.display = 'none';
+      var mobLogout = document.getElementById('btnLogoutAppMobile');
+      if (mobLogout) mobLogout.style.display = 'none';
+      var mobDock = document.getElementById('mobileBottomDock');
+      if (mobDock) mobDock.style.display = 'none';
+
       document.getElementById('loginModal').classList.add('active');
     }
   }
@@ -740,8 +832,8 @@ const GasBridge = {
       targetSec.classList.add('active');
     }
 
-    // Update class active pada nav button
-    var navButtons = document.querySelectorAll('.main-nav-bar .nav-btn');
+    // Update class active pada nav button desktop dan mobile dock
+    var navButtons = document.querySelectorAll('.nav-btn, .mobile-dock-btn');
     navButtons.forEach(function (btn) {
       if (btn.getAttribute('data-target') === targetSectionId) {
         btn.classList.add('active');
@@ -749,6 +841,12 @@ const GasBridge = {
         btn.classList.remove('active');
       }
     });
+
+    // Auto close mobile drawer if switching view
+    var posCartCard = document.getElementById('posCartCard');
+    var cartBackdrop = document.getElementById('cartDrawerBackdrop');
+    if (posCartCard) posCartCard.classList.remove('mobile-open');
+    if (cartBackdrop) cartBackdrop.classList.remove('active');
 
     // Hook spesifik per view saat dibuka
     if (targetSectionId === 'viewRiwayat') {
@@ -797,20 +895,78 @@ const GasBridge = {
   }
 
   // ============================================================================
-  // 7. POS KASIR: KATALOG BARANG ATK & FILTER
+  // 7. POS KASIR: KATALOG BARANG ATK & FILTER (CHILI POS STYLE)
   // ============================================================================
+  var ATK_CATEGORY_ICONS = {
+    'ALL': '🏢',
+    'Kertas': '📄',
+    'Kertas HVS': '📄',
+    'Pulpen': '🖊️',
+    'Pensil': '✏️',
+    'Buku': '📚',
+    'Buku Tulis': '📓',
+    'Spidol': '🖍️',
+    'Map': '📁',
+    'Amplop': '✉️',
+    'Gunting': '✂️',
+    'Lakban': '📦',
+    'Lem': '🧴',
+    'Kalkulator': '🧮',
+    'Tinta': '🖨️',
+    'Flashdisk': '💾',
+    'Lainnya': '🏷️'
+  };
+
+  function getCategoryIcon(catName) {
+    if (!catName) return '🏷️';
+    if (ATK_CATEGORY_ICONS[catName]) return ATK_CATEGORY_ICONS[catName];
+    var lower = catName.toLowerCase();
+    if (lower.indexOf('kertas') !== -1) return '📄';
+    if (lower.indexOf('pulpen') !== -1 || lower.indexOf('pena') !== -1) return '🖊️';
+    if (lower.indexOf('pensil') !== -1) return '✏️';
+    if (lower.indexOf('buku') !== -1) return '📚';
+    if (lower.indexOf('spidol') !== -1) return '🖍️';
+    if (lower.indexOf('map') !== -1) return '📁';
+    if (lower.indexOf('amplop') !== -1) return '✉️';
+    if (lower.indexOf('tinta') !== -1) return '🖨️';
+    if (lower.indexOf('gunting') !== -1) return '✂️';
+    if (lower.indexOf('lakban') !== -1 || lower.indexOf('solasi') !== -1) return '📦';
+    if (lower.indexOf('lem') !== -1) return '🧴';
+    return '🏷️';
+  }
+
   function renderCategoryPills() {
     var container = document.getElementById('categoryPillsList');
-    var html = '<button class="cat-pill ' + (AppState.selectedCategory === 'ALL' ? 'active' : '') + '" data-cat="ALL">Semua Kategori</button>';
+    if (!container) return;
+
+    var totalAll = AppState.catalog.length;
+    var isAllActive = (AppState.selectedCategory === 'ALL');
+
+    var html = '<button type="button" class="cat-pill ' + (isAllActive ? 'active' : '') + '" data-cat="ALL">'
+      + '<span class="cat-pill-icon">🏢</span>'
+      + '<div class="cat-pill-info">'
+      + '  <span class="cat-pill-title">Semua</span>'
+      + '  <span class="cat-pill-count">' + totalAll + ' items</span>'
+      + '</div>'
+      + '</button>';
 
     AppState.categories.forEach(function (cat) {
       var isActive = (AppState.selectedCategory === cat);
-      html += '<button class="cat-pill ' + (isActive ? 'active' : '') + '" data-cat="' + escapeHtml(cat) + '">' + escapeHtml(cat) + '</button>';
+      var count = AppState.catalog.filter(function (i) { return i.kategori === cat; }).length;
+      var icon = getCategoryIcon(cat);
+
+      html += '<button type="button" class="cat-pill ' + (isActive ? 'active' : '') + '" data-cat="' + escapeHtml(cat) + '">'
+        + '<span class="cat-pill-icon">' + icon + '</span>'
+        + '<div class="cat-pill-info">'
+        + '  <span class="cat-pill-title">' + escapeHtml(cat) + '</span>'
+        + '  <span class="cat-pill-count">' + count + ' items</span>'
+        + '</div>'
+        + '</button>';
     });
 
     container.innerHTML = html;
 
-    // Pasang event listener klik filter
+    // Pasang event listener klik filter kategori
     container.querySelectorAll('.cat-pill').forEach(function (pill) {
       pill.addEventListener('click', function () {
         container.querySelectorAll('.cat-pill').forEach(function (p) { p.classList.remove('active'); });
@@ -823,56 +979,113 @@ const GasBridge = {
 
   function renderGoodsGrid() {
     var grid = document.getElementById('posGoodsGrid');
-    var query = AppState.searchQuery;
+    if (!grid) return;
+    var query = (AppState.searchQuery || '').toLowerCase();
     var selCat = AppState.selectedCategory;
 
     var filtered = AppState.catalog.filter(function (item) {
-      // Filter kategori
       if (selCat !== 'ALL' && item.kategori !== selCat) {
         return false;
       }
-      // Filter pencarian
       if (query) {
-        var matchNama = item.nama.toLowerCase().indexOf(query) !== -1;
-        var matchKode = item.kode.toLowerCase().indexOf(query) !== -1;
+        var matchNama = (item.nama || '').toLowerCase().indexOf(query) !== -1;
+        var matchKode = (item.kode || '').toLowerCase().indexOf(query) !== -1;
         return matchNama || matchKode;
       }
       return true;
     });
 
     if (filtered.length === 0) {
-      grid.innerHTML = '<div style="grid-column: 1/-1; text-align: center; padding: 2.5rem; color: var(--slate-400); font-size: 0.9rem;">Tidak ada barang ATK yang sesuai.</div>';
+      grid.innerHTML = '<div style="grid-column: 1/-1; text-align: center; padding: 3rem 1rem; color: var(--slate-400); font-size: 0.95rem;">'
+        + '<div style="font-size: 2.2rem; margin-bottom: 0.5rem;">🔍</div>'
+        + 'Tidak ada barang ATK yang sesuai kata kunci atau filter ini.'
+        + '</div>';
       return;
     }
 
     var html = '';
     filtered.forEach(function (item) {
+      var cartItem = AppState.cart.find(function (c) { return c.kode === item.kode; });
+      var inCart = Boolean(cartItem);
+      var cartQty = inCart ? cartItem.kuantiti : 0;
+
       var stockClass = item.stok <= (item.minStok || 5) ? 'stock-low' : 'stock-safe';
       var stockLabel = item.stok <= 0 ? 'Habis' : 'Stok: ' + item.stok + ' ' + (item.satuan || 'Pcs');
+      var itemIcon = getCategoryIcon(item.kategori);
 
-      html += '<div class="good-card" data-kode="' + item.kode + '">';
-      html += '  <div class="good-card-top">';
-      html += '    <span class="good-sku-badge">' + escapeHtml(item.kode) + '</span>';
-      html += '    <span class="good-stock-badge ' + stockClass + '">' + stockLabel + '</span>';
+      html += '<div class="good-card ' + (inCart ? 'in-cart' : '') + '" data-kode="' + escapeHtml(item.kode) + '">';
+      // Visual & Badges
+      html += '  <div class="good-card-visual">';
+      html += '    <div class="good-card-icon-wrap">' + itemIcon + '</div>';
+      html += '    <div class="good-card-badges">';
+      html += '      <span class="good-sku-badge">' + escapeHtml(item.kode) + '</span>';
+      html += '      <span class="good-stock-badge ' + stockClass + '">' + stockLabel + '</span>';
+      html += '    </div>';
       html += '  </div>';
-      html += '  <div class="good-name">' + escapeHtml(item.nama) + '</div>';
-      html += '  <div class="good-price-row">';
-      html += '    <span class="good-price">' + formatRupiah(item.hargaJual) + '</span>';
-      html += '    <span class="good-unit">/' + escapeHtml(item.satuan || 'Pcs') + '</span>';
+
+      // Body: Kategori & Nama & Harga
+      html += '  <div class="good-card-body">';
+      html += '    <div class="good-card-cat">' + escapeHtml(item.kategori || 'ATK') + '</div>';
+      html += '    <div class="good-name" title="' + escapeHtml(item.nama) + '">' + escapeHtml(item.nama) + '</div>';
+      html += '    <div class="good-price-row">';
+      html += '      <span class="good-price">' + formatRupiah(item.hargaJual) + '</span>';
+      html += '      <span class="good-unit">/' + escapeHtml(item.satuan || 'Pcs') + '</span>';
+      html += '    </div>';
+      html += '  </div>';
+
+      // Action: Tambah vs Stepper (Chili POS Style)
+      html += '  <div class="good-card-action">';
+      if (!inCart) {
+        html += '    <button type="button" class="btn-add-dish" data-action="add" data-kode="' + escapeHtml(item.kode) + '">';
+        html += '      <svg class="icon icon-sm" viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>';
+        html += '      <span>Tambah</span>';
+        html += '    </button>';
+      } else {
+        html += '    <div class="card-stepper-ctrl">';
+        html += '      <button type="button" class="btn-card-step step-dec" data-action="dec" data-kode="' + escapeHtml(item.kode) + '" title="Kurang">−</button>';
+        html += '      <span class="card-step-val">' + cartQty + '</span>';
+        html += '      <button type="button" class="btn-card-step step-inc" data-action="inc" data-kode="' + escapeHtml(item.kode) + '" title="Tambah">+</button>';
+        html += '    </div>';
+      }
       html += '  </div>';
       html += '</div>';
     });
 
     grid.innerHTML = html;
 
-    // Pasang klik barang untuk masuk keranjang
+    // Pasang listeners klik kartu dan tombol stepper
     grid.querySelectorAll('.good-card').forEach(function (card) {
-      card.addEventListener('click', function () {
-        var kode = card.getAttribute('data-kode');
-        var item = AppState.catalog.find(function (i) { return i.kode === kode; });
-        if (item) {
+      var kode = card.getAttribute('data-kode');
+      var item = AppState.catalog.find(function (i) { return i.kode === kode; });
+      if (!item) return;
+
+      var btnAdd = card.querySelector('[data-action="add"]');
+      if (btnAdd) {
+        btnAdd.addEventListener('click', function (e) {
+          e.stopPropagation();
           addToCart(item);
-        }
+        });
+      }
+
+      var btnDec = card.querySelector('[data-action="dec"]');
+      if (btnDec) {
+        btnDec.addEventListener('click', function (e) {
+          e.stopPropagation();
+          updateCartQty(kode, -1);
+        });
+      }
+
+      var btnInc = card.querySelector('[data-action="inc"]');
+      if (btnInc) {
+        btnInc.addEventListener('click', function (e) {
+          e.stopPropagation();
+          updateCartQty(kode, 1);
+        });
+      }
+
+      card.addEventListener('click', function (e) {
+        if (e.target.closest('button')) return;
+        addToCart(item);
       });
     });
   }
@@ -1108,6 +1321,12 @@ const GasBridge = {
 
         // Simpan ke daftar transaksi lokal
         AppState.transactions.unshift(invData);
+
+        // Tutup drawer cart mobile jika terbuka
+        var posCartCard = document.getElementById('posCartCard');
+        var cartBackdrop = document.getElementById('cartDrawerBackdrop');
+        if (posCartCard) posCartCard.classList.remove('mobile-open');
+        if (cartBackdrop) cartBackdrop.classList.remove('active');
 
         // Buka modal invoice
         openInvoiceModal(invData);
