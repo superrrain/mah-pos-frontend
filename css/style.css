@@ -2731,3 +2731,159 @@ textarea.form-control {
     margin: 5mm;
   }
 }
+
+/* ==========================================================================
+   MODUL MAHEX DELIVERY (GENERATOR FAKTUR PENGIRIMAN & LOGISTIK)
+   ========================================================================== */
+.mahex-banner-card {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 1.25rem;
+  background: linear-gradient(135deg, #1e1b4b 0%, #312e81 50%, #4338ca 100%);
+  color: #ffffff;
+  padding: 1.6rem;
+  border-radius: var(--radius-lg);
+  margin-bottom: 1.5rem;
+  box-shadow: 0 4px 16px rgba(49, 46, 129, 0.2);
+}
+
+.mahex-badge-pill {
+  display: inline-block;
+  background: rgba(255, 255, 255, 0.15);
+  color: #e0e7ff;
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  padding: 0.25rem 0.65rem;
+  border-radius: 9999px;
+  text-transform: uppercase;
+  margin-bottom: 0.5rem;
+}
+
+.mahex-banner-title {
+  font-size: 1.65rem;
+  font-weight: 800;
+  margin: 0;
+  letter-spacing: -0.02em;
+}
+
+.mahex-banner-subtitle {
+  font-size: 0.88rem;
+  color: #c7d2fe;
+  margin: 0.25rem 0 0.5rem 0;
+}
+
+.mahex-banner-address {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-size: 0.78rem;
+  color: #a5b4fc;
+}
+
+.mahex-form-wrapper {
+  max-width: 860px;
+  margin: 0 auto;
+}
+
+.mahex-grid-2 {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1rem;
+}
+
+@media (max-width: 640px) {
+  .mahex-grid-2 {
+    grid-template-columns: 1fr;
+  }
+}
+
+.flex-between-label {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 0.35rem;
+}
+
+.btn-text-link {
+  background: none;
+  border: none;
+  color: #4f46e5;
+  font-size: 0.75rem;
+  font-weight: 600;
+  cursor: pointer;
+  padding: 0;
+  transition: var(--transition);
+}
+
+.btn-text-link:hover {
+  color: #3730a3;
+  text-decoration: underline;
+}
+
+.mahex-rate-box {
+  background: #ecfdf5 !important;
+  color: #047857 !important;
+  font-size: 1.05rem !important;
+  font-weight: 800 !important;
+  border-color: #a7f3d0 !important;
+}
+
+.mahex-bank-card {
+  background: var(--slate-50);
+  border: 1.5px dashed var(--slate-200);
+  border-radius: var(--radius-md);
+  padding: 0.85rem 1.1rem;
+  margin-top: 0.5rem;
+}
+
+.mahex-bank-badge {
+  display: flex;
+  align-items: center;
+  gap: 0.85rem;
+  font-size: 0.92rem;
+  flex-wrap: wrap;
+}
+
+.mahex-action-row {
+  display: flex;
+  align-items: center;
+  gap: 0.85rem;
+  margin-top: 1.5rem;
+  flex-wrap: wrap;
+}
+
+.mahex-btn-primary {
+  background: #4338ca !important;
+  color: #ffffff !important;
+  border: none !important;
+  padding: 0.75rem 1.4rem !important;
+  border-radius: var(--radius-md) !important;
+  font-weight: 700 !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  gap: 0.5rem !important;
+  box-shadow: 0 4px 12px rgba(67, 56, 202, 0.25) !important;
+}
+
+.mahex-btn-primary:hover {
+  background: #3730a3 !important;
+}
+
+.mahex-btn-wa {
+  background: #10b981 !important;
+  color: #ffffff !important;
+  border: none !important;
+  padding: 0.75rem 1.25rem !important;
+  border-radius: var(--radius-md) !important;
+  font-weight: 700 !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  gap: 0.5rem !important;
+}
+
+.mahex-btn-wa:hover {
+  background: #059669 !important;
+}

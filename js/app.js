@@ -691,6 +691,9 @@ const GasBridge = {
       document.getElementById('modalPenggunaForm').classList.remove('active');
     });
     document.getElementById('formPengguna').addEventListener('submit', handleSavePengguna);
+
+    // 15. Inisialisasi Event Listener Modul MAHEX Delivery
+    initMahexListeners();
   }
 
   // ============================================================================
@@ -857,6 +860,8 @@ const GasBridge = {
       populateSettingsForm();
     } else if (targetSectionId === 'viewPengguna') {
       loadUsersList();
+    } else if (targetSectionId === 'viewMahexDelivery') {
+      initMahexView();
     }
   }
 
@@ -3125,4 +3130,606 @@ const GasBridge = {
       .replace(/>/g, '&gt;')
       .replace(/"/g, '&quot;')
       .replace(/'/g, '&#39;');
+  }
+
+  // ============================================================================
+  // 17. MODUL MAHEX DELIVERY (GENERATOR FAKTUR PENGIRIMAN & LOGISTIK BAHAN BAKU)
+  // ============================================================================
+  const DEFAULT_MAHEX_TARIF = {
+    "BANTEN RAYA": {
+      "Pasar Kemis": [100000, 200000, 300000, 400000, 600000, 800000],
+      "Kelapa Dua": [100000, 200000, 300000, 400000, 600000, 800000],
+      "Inpres Raya": [150000, 300000, 400000, 500000, 750000, 950000],
+      "Puspitek Raya": [150000, 300000, 400000, 500000, 750000, 950000],
+      "Bukit Dago": [150000, 300000, 400000, 500000, 750000, 950000],
+      "Mujair": [150000, 300000, 400000, 500000, 750000, 950000],
+      "Mauk": [150000, 300000, 400000, 500000, 750000, 950000],
+      "Jati Mauk": [150000, 300000, 400000, 500000, 750000, 950000],
+      "Kibin": [150000, 300000, 400000, 500000, 750000, 950000],
+      "Talaga Bestari": [150000, 300000, 400000, 500000, 750000, 950000],
+      "Kronjo": [185000, 350000, 450000, 550000, 800000, 1000000],
+      "Taman Adiyasa": [185000, 350000, 450000, 550000, 800000, 1000000],
+      "Ciruas": [185000, 350000, 450000, 550000, 800000, 1000000],
+      "Grogol Cilegon": [200000, 400000, 500000, 650000, 850000, 1100000],
+      "Citangkil": [200000, 400000, 500000, 650000, 850000, 1100000],
+      "Anyer": [220000, 430000, 530000, 680000, 870000, 1150000],
+      "Labuan": [250000, 450000, 550000, 700000, 950000, 1250000],
+      "Panimbang": [250000, 450000, 550000, 700000, 950000, 1250000],
+      "Menes": [250000, 450000, 550000, 700000, 950000, 1250000],
+      "BPI Rokoy": [250000, 430000, 550000, 700000, 950000, 1250000],
+      "Malingping": [250000, 450000, 550000, 700000, 950000, 1250000]
+    },
+    "JABODETABEK - BANDUNG - PRIATIM": {
+      "Grogol Petamburan": [185000, 300000, 400000, 550000, 750000, 950000],
+      "Wibawa mukti": [200000, 350000, 450000, 600000, 800000, 1000000],
+      "Bantar Gebang": [200000, 350000, 450000, 600000, 800000, 1000000],
+      "Bojong Kulur": [200000, 350000, 450000, 600000, 800000, 1000000],
+      "Cikeas": [250000, 400000, 500000, 650000, 850000, 1050000],
+      "Babakan Madang": [280000, 400000, 500000, 650000, 850000, 1050000],
+      "Cigombong": [300000, 400000, 500000, 650000, 850000, 1050000],
+      "Cikereteg": [300000, 400000, 500000, 650000, 850000, 1050000],
+      "Cicurug": [300000, 400000, 500000, 650000, 850000, 1050000],
+      "Pacet": [350000, 450000, 550000, 700000, 900000, 1150000],
+      "Baros": [350000, 450000, 550000, 700000, 900000, 1150000],
+      "Parung Kuda": [300000, 400000, 500000, 650000, 850000, 1050000],
+      "Pakuwon": [300000, 400000, 500000, 650000, 850000, 1050000],
+      "Cikalong Kulon": [350000, 450000, 550000, 700000, 900000, 1150000],
+      "Sukatani": [250000, 400000, 500000, 650000, 850000, 1050000],
+      "Telaga Murni": [250000, 400000, 500000, 650000, 850000, 1050000],
+      "Ujung Berung": [350000, 450000, 550000, 700000, 900000, 1150000],
+      "Babakan Ciparay": [350000, 450000, 550000, 700000, 900000, 1150000],
+      "Ebah Majalaya": [370000, 500000, 600000, 750000, 950000, 1200000],
+      "Pangalengan": [370000, 500000, 600000, 750000, 950000, 1200000],
+      "Garut": [420000, 580000, 680000, 850000, 1050000, 1250000],
+      "Ciawi Tasik": [420000, 580000, 680000, 850000, 1050000, 1250000],
+      "Pangandaran": [550000, 680000, 780000, 950000, 1150000, 1550000]
+    },
+    "PANTURA RAYA": {
+      "Tanjungpura": [200000, 350000, 450000, 650000, 850000, 1100000],
+      "Lamaran": [250000, 400000, 500000, 700000, 900000, 1150000],
+      "Cibuaya": [250000, 400000, 500000, 700000, 900000, 1150000],
+      "Wadas": [300000, 450000, 550000, 750000, 950000, 1200000],
+      "Kondang Jaya": [250000, 400000, 500000, 700000, 900000, 1150000],
+      "Telagasari": [250000, 400000, 500000, 700000, 900000, 1150000],
+      "Kosambi": [250000, 400000, 500000, 700000, 900000, 1150000],
+      "Purwadadi": [270000, 420000, 520000, 720000, 920000, 1170000],
+      "Pabuaran Subang": [270000, 420000, 520000, 720000, 920000, 1170000],
+      "Cipeundeuy": [270000, 420000, 520000, 720000, 920000, 1170000],
+      "Sukamandi": [320000, 500000, 600000, 800000, 1000000, 1250000],
+      "Wedrink Subang": [350000, 550000, 650000, 850000, 1050000, 1300000],
+      "Pagaden": [350000, 550000, 650000, 850000, 1050000, 1300000],
+      "Cikampek": [250000, 400000, 500000, 700000, 900000, 1150000],
+      "Cilamaya": [270000, 450000, 550000, 750000, 950000, 1200000],
+      "Tegalwaru": [270000, 450000, 550000, 750000, 950000, 1200000],
+      "Tempuran": [270000, 450000, 550000, 750000, 950000, 1200000],
+      "Majalengka": [370000, 580000, 680000, 900000, 1100000, 1250000],
+      "Babakan Cirebon": [420000, 620000, 720000, 950000, 1150000, 1400000],
+      "Pabuaran Kidul Cirebon": [420000, 620000, 720000, 950000, 1150000, 1400000],
+      "Dukupuntang": [400000, 600000, 700000, 920000, 1120000, 1380000],
+      "Arjawinangun": [400000, 600000, 700000, 920000, 1120000, 1380000],
+      "Palaraya Tegal": [450000, 650000, 750000, 950000, 1200000, 1500000],
+      "Adiwerna": [450000, 650000, 750000, 950000, 1200000, 1500000]
+    }
+  };
+
+  const MahexLogoBase64 = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAADAAAAAwCAYAAABXAvmFAAAACXBIWXMAAA7DAAAOwwHHb6hkAAAAIGNIUk0AAHolAACAgwAA+f8AAIDpAAB1MAAA6mAAADqYAAAXb5JfxUYAAAM4SURBVHja7JrPa1xVHMafb5l8V5s0gqKItYoiq0tB8APQQpcuumld6ELw1oUhdKNuhW67VdDFi26sdBF1oQtV21tQUFEXLQUbFRG0VpSkVmtkMpOZeZ5z7swkTWbe5j7l3P1AkjlnfvM753znnsyZMwAgQ4YMGbT1A4gBf1uB0u5H+P32tK2H7X4Gf01Vb6O8L4gB/598cI2Y9m20f1qF7B7aX221j79yD4AEPj5qF5u9RDAh0g1G/g90zJ/Q7W2z5hX7fC0tH11Q/W21d/1b4B9B4gG41sP5nB2tE16D5I/9z8330jAHz2s0uP13340+k7hWk7x+90y9+Iu7v/9T2w2Y3f9zXbW32V/iAX/Y2j/rD1f8G+P0b1A7d5J/bT1bF4P+W7e6X07aex+2qBq8aZl5s5JzN1k5v4I9OtvvM16xJ1p/uT7K18v1s3mH626L3hB9N0+8Nf/Zz4vJ+D1H1W1M3N7mHl63Vz5D0N75x6bW38zWbrlA9sP2q0P97L/wE/gL4uH2MffvYn6P7P3bEaN1H+9zM4Y7vH51N3e8W7Z7c78Z+uC83bC61c6b12+86e4b2C6q7D/w6C2+w/y63P1vD+W3HhA920VvdZ6f1/c5W92tX7r7e7d90M/wP9P9F8aXq3g/wA9Gz0d5885f8fXg6L176378AfnX232M37y75nO7/tXN+L315w/h16rV6Y5j3Y9o9oB599Y9jR4b/e9L7O84X6z2yW88z+0f77+u9g86x90h9674vWw+x//hUv17x66yD97w30N+r/wL7G/wG+/d/2v5v2pC521v5tWw3n9m3+q9w5+4N548L32131W54fW31e6q9w7vXfH+u94f836s/4H0e8Y/TvfGffvffN5s2LvvL/wW8A/73y74n9d+29t24Ltv627v2d0/uWfvG573673cPf/f3v3vvqN107W/Y3v1r6L76Tfvvf/r/d8n1XGq1Xf2r98fvffr+b73rf1749833v27X03q9u+vvdvfdvfe+vffvvevffu7b777e+9//wDv/fG72vXvfvu+/fevf9+/fd/9+/ffvu7//v3r7vvu77//v3vu/f+v//vfv39vff//v3u3vvv3vu/fvvvvvvv77//7977//v3vu+////x+3/9k=";
+
+  const MahexState = {
+    tarifData: Object.assign({}, DEFAULT_MAHEX_TARIF),
+    isCustomBrand: false,
+    isCustomRegion: false,
+    isCustomStore: false,
+    isCustomRate: false,
+    currentRate: 100000,
+    initialized: false
+  };
+
+  function initMahexView() {
+    if (!MahexState.initialized) {
+      initMahexModule();
+      MahexState.initialized = true;
+    }
+  }
+
+  function initMahexModule() {
+    var dateInput = document.getElementById('mhx_date');
+    if (dateInput && !dateInput.value) {
+      dateInput.valueAsDate = new Date();
+    }
+
+    populateMahexRegions();
+    generateMahexInvoiceNo();
+    calculateMahexRate();
+    fetchMahexTarifSheets(false);
+  }
+
+  function populateMahexRegions() {
+    var regionSelect = document.getElementById('mhx_region');
+    if (!regionSelect) return;
+    regionSelect.innerHTML = '';
+    var data = MahexState.tarifData || DEFAULT_MAHEX_TARIF;
+    Object.keys(data).forEach(function (reg) {
+      var opt = document.createElement('option');
+      opt.value = reg;
+      opt.textContent = reg;
+      regionSelect.appendChild(opt);
+    });
+    updateMahexDestinations();
+  }
+
+  function updateMahexDestinations() {
+    var regionSelect = document.getElementById('mhx_region');
+    var storeSelect = document.getElementById('mhx_store_name');
+    if (!regionSelect || !storeSelect) return;
+
+    var region = regionSelect.value;
+    storeSelect.innerHTML = '';
+    var data = MahexState.tarifData || DEFAULT_MAHEX_TARIF;
+
+    if (data[region]) {
+      Object.keys(data[region]).forEach(function (store) {
+        var opt = document.createElement('option');
+        opt.value = store;
+        opt.textContent = store;
+        storeSelect.appendChild(opt);
+      });
+    }
+
+    var destInput = document.getElementById('mhx_destination');
+    if (destInput && storeSelect.value) {
+      destInput.value = storeSelect.value;
+    }
+
+    calculateMahexRate();
+  }
+
+  function calculateMahexRate() {
+    if (MahexState.isCustomRate) {
+      var customVal = parseInt(document.getElementById('mhx_rate_custom').value, 10);
+      MahexState.currentRate = isNaN(customVal) ? 0 : customVal;
+      return;
+    }
+
+    var region = MahexState.isCustomRegion ? 'CUSTOM' : (document.getElementById('mhx_region') ? document.getElementById('mhx_region').value : '');
+    var store = MahexState.isCustomStore ? 'CUSTOM' : (document.getElementById('mhx_store_name') ? document.getElementById('mhx_store_name').value : '');
+    var dus = parseInt(document.getElementById('mhx_dus').value, 10) || 0;
+
+    var tierIndex = 0;
+    if (region === 'BANTEN RAYA') {
+      if (dus <= 15) tierIndex = 0;
+      else if (dus <= 25) tierIndex = 1;
+      else if (dus <= 35) tierIndex = 2;
+      else if (dus <= 50) tierIndex = 3;
+      else if (dus <= 80) tierIndex = 4;
+      else tierIndex = 5;
+    } else {
+      if (dus <= 10) tierIndex = 0;
+      else if (dus <= 20) tierIndex = 1;
+      else if (dus <= 30) tierIndex = 2;
+      else if (dus <= 45) tierIndex = 3;
+      else if (dus <= 75) tierIndex = 4;
+      else tierIndex = 5;
+    }
+
+    var dataTarif = MahexState.tarifData || DEFAULT_MAHEX_TARIF;
+    if (dataTarif[region] && dataTarif[region][store]) {
+      MahexState.currentRate = dataTarif[region][store][tierIndex] || 100000;
+    } else {
+      MahexState.currentRate = 100000;
+    }
+
+    var rateDisplayEl = document.getElementById('mhx_rate_display');
+    if (rateDisplayEl) {
+      rateDisplayEl.value = 'Rp ' + MahexState.currentRate.toLocaleString('id-ID');
+    }
+  }
+
+  function generateMahexInvoiceNo() {
+    var invInput = document.getElementById('mhx_invoice_no');
+    if (!invInput) return;
+    var d = new Date();
+    var y = d.getFullYear();
+    var m = ('0' + (d.getMonth() + 1)).slice(-2);
+    var rand = ('00' + (Math.floor(Math.random() * 900) + 1)).slice(-3);
+    invInput.value = 'INV/MHX/' + y + '/' + m + '/' + rand;
+  }
+
+  function initMahexListeners() {
+    var btnSync = document.getElementById('btnSyncMahexTarif');
+    if (btnSync) {
+      btnSync.addEventListener('click', function () {
+        fetchMahexTarifSheets(true);
+      });
+    }
+
+    var btnAutoNo = document.getElementById('btnGenMahexInv');
+    if (btnAutoNo) {
+      btnAutoNo.addEventListener('click', generateMahexInvoiceNo);
+    }
+
+    var regionEl = document.getElementById('mhx_region');
+    if (regionEl) {
+      regionEl.addEventListener('change', updateMahexDestinations);
+    }
+
+    var storeEl = document.getElementById('mhx_store_name');
+    if (storeEl) {
+      storeEl.addEventListener('change', function () {
+        var destInput = document.getElementById('mhx_destination');
+        if (destInput && this.value) {
+          destInput.value = this.value;
+        }
+        calculateMahexRate();
+      });
+    }
+
+    var dusEl = document.getElementById('mhx_dus');
+    if (dusEl) {
+      dusEl.addEventListener('input', calculateMahexRate);
+    }
+
+    var rateCustomEl = document.getElementById('mhx_rate_custom');
+    if (rateCustomEl) {
+      rateCustomEl.addEventListener('input', calculateMahexRate);
+    }
+
+    // Toggle Buttons
+    var btnToggleBrand = document.getElementById('btn_toggle_brand');
+    if (btnToggleBrand) {
+      btnToggleBrand.addEventListener('click', function () {
+        MahexState.isCustomBrand = !MahexState.isCustomBrand;
+        var sel = document.getElementById('mhx_brand');
+        var inp = document.getElementById('mhx_brand_custom');
+        if (MahexState.isCustomBrand) {
+          sel.style.display = 'none';
+          inp.style.display = 'block';
+          this.textContent = '📋 Pilih dari Daftar';
+          inp.focus();
+        } else {
+          sel.style.display = 'block';
+          inp.style.display = 'none';
+          this.textContent = '✏️ Ketik Manual';
+        }
+      });
+    }
+
+    var btnToggleStore = document.getElementById('btn_toggle_store');
+    if (btnToggleStore) {
+      btnToggleStore.addEventListener('click', function () {
+        MahexState.isCustomStore = !MahexState.isCustomStore;
+        var sel = document.getElementById('mhx_store_name');
+        var inp = document.getElementById('mhx_store_name_custom');
+        if (MahexState.isCustomStore) {
+          sel.style.display = 'none';
+          inp.style.display = 'block';
+          this.textContent = '📋 Pilih dari Daftar';
+          inp.focus();
+        } else {
+          sel.style.display = 'block';
+          inp.style.display = 'none';
+          this.textContent = '✏️ Ketik Manual';
+          calculateMahexRate();
+        }
+      });
+    }
+
+    var btnToggleRegion = document.getElementById('btn_toggle_region');
+    if (btnToggleRegion) {
+      btnToggleRegion.addEventListener('click', function () {
+        MahexState.isCustomRegion = !MahexState.isCustomRegion;
+        var sel = document.getElementById('mhx_region');
+        var inp = document.getElementById('mhx_region_custom');
+        if (MahexState.isCustomRegion) {
+          sel.style.display = 'none';
+          inp.style.display = 'block';
+          this.textContent = '📋 Pilih dari Daftar';
+          inp.focus();
+        } else {
+          sel.style.display = 'block';
+          inp.style.display = 'none';
+          this.textContent = '✏️ Ketik Manual';
+          updateMahexDestinations();
+        }
+      });
+    }
+
+    var btnToggleRate = document.getElementById('btn_toggle_rate');
+    if (btnToggleRate) {
+      btnToggleRate.addEventListener('click', function () {
+        MahexState.isCustomRate = !MahexState.isCustomRate;
+        var disp = document.getElementById('mhx_rate_display');
+        var inp = document.getElementById('mhx_rate_custom');
+        if (MahexState.isCustomRate) {
+          disp.style.display = 'none';
+          inp.style.display = 'block';
+          this.textContent = '🤖 Hitung Otomatis';
+          inp.value = MahexState.currentRate;
+          inp.focus();
+        } else {
+          disp.style.display = 'block';
+          inp.style.display = 'none';
+          this.textContent = '✏️ Edit Manual';
+          calculateMahexRate();
+        }
+      });
+    }
+
+    // Tombol Download Faktur PDF
+    var btnPdf = document.getElementById('btnGenerateMahexPdf');
+    if (btnPdf) {
+      btnPdf.addEventListener('click', generateMahexPDF);
+    }
+
+    // Tombol Kirim WhatsApp
+    var btnWa = document.getElementById('btnShareMahexWa');
+    if (btnWa) {
+      btnWa.addEventListener('click', shareMahexWhatsApp);
+    }
+
+    // Tombol Reset Form
+    var btnReset = document.getElementById('btnResetMahexForm');
+    if (btnReset) {
+      btnReset.addEventListener('click', function () {
+        document.getElementById('formMahexDelivery').reset();
+        MahexState.isCustomBrand = false;
+        MahexState.isCustomRegion = false;
+        MahexState.isCustomStore = false;
+        MahexState.isCustomRate = false;
+        document.getElementById('mhx_brand').style.display = 'block';
+        document.getElementById('mhx_brand_custom').style.display = 'none';
+        document.getElementById('mhx_store_name').style.display = 'block';
+        document.getElementById('mhx_store_name_custom').style.display = 'none';
+        document.getElementById('mhx_region').style.display = 'block';
+        document.getElementById('mhx_region_custom').style.display = 'none';
+        document.getElementById('mhx_rate_display').style.display = 'block';
+        document.getElementById('mhx_rate_custom').style.display = 'none';
+        document.getElementById('btn_toggle_brand').textContent = '✏️ Ketik Manual';
+        document.getElementById('btn_toggle_store').textContent = '✏️ Ketik Manual';
+        document.getElementById('btn_toggle_region').textContent = '✏️ Ketik Manual';
+        document.getElementById('btn_toggle_rate').textContent = '✏️ Edit Manual';
+        initMahexModule();
+        showToast('Formulir MAHEX direset.', 'info');
+      });
+    }
+  }
+
+  function fetchMahexTarifSheets(manual) {
+    if (manual) showToast('Menghubungkan ke Google Sheets MAHEX_TARIF...', 'info');
+    GasBridge.call('getMahexTarif', [], function (res) {
+      if (res && res.success && res.data && Object.keys(res.data).length > 0) {
+        MahexState.tarifData = res.data;
+        populateMahexRegions();
+        if (manual) showToast('Master tarif MAHEX berhasil disinkronkan dari Google Sheets!', 'success');
+      } else {
+        if (manual) showToast('Gagal memuat tarif Sheets, menggunakan tarif bawaan sistem.', 'error');
+      }
+    }, function () {
+      if (manual) showToast('Koneksi backend gagal, menggunakan tarif lokal.', 'error');
+    });
+  }
+
+  function generateMahexPDF() {
+    var jsPdfLib = (window.jspdf && window.jspdf.jsPDF) || window.jsPDF;
+    if (!jsPdfLib) {
+      alert('Library jsPDF belum siap dimuat, mohon tunggu beberapa detik atau refresh halaman.');
+      return;
+    }
+
+    var doc = new jsPdfLib();
+
+    var invoiceNo = document.getElementById('mhx_invoice_no').value || 'INV/MHX/' + new Date().getFullYear();
+    var date = document.getElementById('mhx_date').value || new Date().toISOString().split('T')[0];
+
+    var formattedDateForFile = date;
+    if (date && date.indexOf('-') !== -1) {
+      var parts = date.split('-');
+      if (parts.length === 3) {
+        formattedDateForFile = parts[2] + '-' + parts[1] + '-' + parts[0];
+      }
+    }
+
+    var brand = MahexState.isCustomBrand ? (document.getElementById('mhx_brand_custom').value || '-') : document.getElementById('mhx_brand').value;
+    var storeName = MahexState.isCustomStore ? (document.getElementById('mhx_store_name_custom').value || '-') : document.getElementById('mhx_store_name').value;
+    var region = MahexState.isCustomRegion ? (document.getElementById('mhx_region_custom').value || '-') : document.getElementById('mhx_region').value;
+
+    var destination = document.getElementById('mhx_destination').value || '-';
+    var dus = document.getElementById('mhx_dus').value || '15';
+    var notes = document.getElementById('mhx_notes').value || '-';
+
+    if (MahexState.isCustomRate) {
+      MahexState.currentRate = parseInt(document.getElementById('mhx_rate_custom').value, 10) || 0;
+    }
+
+    try {
+      doc.addImage(MahexLogoBase64, 'PNG', 158, 10, 38, 22);
+    } catch (e) {
+      console.log('Logo MAHEX dilewati.');
+    }
+
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(16);
+    doc.setTextColor(30, 41, 59);
+    doc.text('MAHEX', 14, 18);
+
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(9);
+    doc.setTextColor(79, 70, 229);
+    doc.text('We Are Always By Your Side', 14, 24);
+
+    doc.setFont('helvetica', 'normal');
+    doc.setFontSize(8.5);
+    doc.setTextColor(100, 116, 139);
+    doc.text('Alamat: Cilame, Kec. Ngamprah, Kabupaten Bandung Barat, Jawa Barat 40552', 14, 30);
+
+    doc.setDrawColor(203, 213, 225);
+    doc.line(14, 35, 196, 35);
+
+    doc.setFontSize(10);
+    doc.setTextColor(51, 65, 85);
+
+    doc.setFont('helvetica', 'bold');
+    doc.text('No. Faktur:', 14, 43);
+    doc.setFont('helvetica', 'normal');
+    doc.text(invoiceNo, 45, 43);
+
+    doc.setFont('helvetica', 'bold');
+    doc.text('Kepada Yth:', 110, 43);
+    doc.setFont('helvetica', 'normal');
+    doc.text(storeName, 138, 43);
+
+    doc.setFont('helvetica', 'bold');
+    doc.text('Tanggal:', 14, 50);
+    doc.setFont('helvetica', 'normal');
+    doc.text(date, 45, 50);
+
+    doc.setFont('helvetica', 'bold');
+    doc.text('Brand / Klien:', 110, 50);
+    doc.setFont('helvetica', 'normal');
+    doc.text(brand, 138, 50);
+
+    doc.setFont('helvetica', 'bold');
+    doc.text('Wilayah:', 14, 57);
+    doc.setFont('helvetica', 'normal');
+    doc.text(region, 45, 57);
+
+    doc.setFont('helvetica', 'bold');
+    doc.text('Kota Tujuan:', 110, 57);
+    doc.setFont('helvetica', 'normal');
+    doc.text(destination, 138, 57);
+
+    var startY = 66;
+    doc.setFillColor(79, 70, 229);
+    doc.rect(14, startY, 182, 8, 'F');
+
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(9);
+    doc.setTextColor(255, 255, 255);
+    doc.text('Deskripsi Pengiriman', 18, startY + 5.5);
+    doc.text('Jumlah', 115, startY + 5.5);
+    doc.text('Total Biaya', 155, startY + 5.5);
+
+    startY += 8;
+
+    doc.setFont('helvetica', 'normal');
+    doc.setFontSize(9);
+    doc.setTextColor(30, 41, 59);
+
+    var splitDesc = doc.splitTextToSize('Jasa Pengiriman Bahan Baku ke ' + storeName + ' (Tujuan: ' + destination + ')', 92);
+    if (notes && notes !== '-') {
+      splitDesc.push('Catatan: ' + notes);
+    }
+
+    var rowHeight = Math.max(16, (splitDesc.length * 5) + 6);
+
+    doc.setFillColor(248, 250, 252);
+    doc.rect(14, startY, 182, rowHeight, 'F');
+
+    var textY = startY + 5.5;
+    for (var i = 0; i < splitDesc.length; i++) {
+      doc.text(splitDesc[i], 18, textY);
+      textY += 5;
+    }
+
+    doc.text(dus + ' Dus', 115, startY + 5.5);
+    doc.text('Rp ' + MahexState.currentRate.toLocaleString('id-ID'), 155, startY + 5.5);
+
+    doc.setDrawColor(203, 213, 225);
+    doc.rect(14, startY - 8, 182, rowHeight + 8);
+
+    startY += rowHeight + 4;
+    doc.setFont('helvetica', 'bold');
+    doc.text('Total Pembayaran:', 120, startY);
+    doc.setFontSize(12);
+    doc.setTextColor(79, 70, 229);
+    doc.text('Rp ' + MahexState.currentRate.toLocaleString('id-ID'), 155, startY);
+
+    startY += 8;
+    doc.setDrawColor(226, 232, 240);
+    doc.line(14, startY, 196, startY);
+
+    startY += 8;
+    var blockStartY = startY;
+
+    doc.setFontSize(9.5);
+    doc.setFont('helvetica', 'bold');
+    doc.setTextColor(17, 24, 39);
+    doc.text('Pembayaran Transfer Ke :', 14, blockStartY);
+
+    doc.setFont('helvetica', 'bold');
+    doc.setTextColor(220, 38, 38);
+    doc.text('Bank BCA', 14, blockStartY + 6);
+
+    doc.setFont('helvetica', 'bold');
+    doc.setTextColor(17, 24, 39);
+    doc.text('2090187042', 14, blockStartY + 11.5);
+
+    doc.setFont('helvetica', 'bold');
+    doc.setTextColor(30, 41, 59);
+    doc.text('Dadan Haryanto', 14, blockStartY + 17);
+
+    doc.setFontSize(9.5);
+    doc.setFont('helvetica', 'normal');
+    doc.setTextColor(51, 65, 85);
+
+    doc.text('Penerima / Outlet,', 115, blockStartY);
+    doc.text('Hormat Kami,', 160, blockStartY);
+
+    doc.text('( .................................... )', 105, blockStartY + 20);
+
+    doc.setFont('helvetica', 'bold');
+    doc.text('Dadan Haryanto', 155, blockStartY + 20);
+
+    var fileName = 'Faktur ' + brand + ' ' + storeName + ' ' + formattedDateForFile + '.pdf';
+    doc.save(fileName);
+    showToast('Faktur PDF ' + fileName + ' berhasil diunduh!', 'success');
+
+    // Arsipkan otomatis ke Google Sheets di background
+    GasBridge.call('simpanFakturMahex', [{
+      noFaktur: invoiceNo,
+      tanggal: date,
+      brand: brand,
+      toko: storeName,
+      wilayah: region,
+      tujuan: destination,
+      dus: dus,
+      totalTarif: MahexState.currentRate,
+      catatan: notes
+    }], function (res) {
+      if (res && res.success) {
+        showToast('Faktur otomatis tercatat di Google Sheets MAHEX_FAKTUR.', 'success');
+      }
+    });
+  }
+
+  function shareMahexWhatsApp() {
+    var invoiceNo = document.getElementById('mhx_invoice_no').value || '-';
+    var date = document.getElementById('mhx_date').value || '-';
+    var brand = MahexState.isCustomBrand ? (document.getElementById('mhx_brand_custom').value || '-') : document.getElementById('mhx_brand').value;
+    var storeName = MahexState.isCustomStore ? (document.getElementById('mhx_store_name_custom').value || '-') : document.getElementById('mhx_store_name').value;
+    var destination = document.getElementById('mhx_destination').value || '-';
+    var dus = document.getElementById('mhx_dus').value || '0';
+    var rate = MahexState.currentRate || 0;
+    var notes = document.getElementById('mhx_notes').value || '-';
+
+    var msg = '🚚 *FAKTUR PENGIRIMAN MAHEX*\n'
+      + '_We Are Always By Your Side_\n'
+      + '============================\n'
+      + '• *No. Faktur:* ' + invoiceNo + '\n'
+      + '• *Tanggal:* ' + date + '\n'
+      + '• *Brand / Klien:* ' + brand + '\n'
+      + '• *Tujuan Outlet:* ' + storeName + ' (' + destination + ')\n'
+      + '• *Jumlah Muatan:* ' + dus + ' Dus\n'
+      + '• *Total Biaya:* Rp ' + Number(rate).toLocaleString('id-ID') + '\n';
+
+    if (notes && notes !== '-') {
+      msg += '• *Catatan:* ' + notes + '\n';
+    }
+
+    msg += '============================\n'
+      + '💳 *Pembayaran Transfer Ke:*\n'
+      + 'Bank BCA: *2090187042*\n'
+      + 'a.n *Dadan Haryanto*\n\n'
+      + 'Terima kasih telah mempercayakan pengiriman bahan baku kepada MAHEX!';
+
+    window.open('https://api.whatsapp.com/send?text=' + encodeURIComponent(msg), '_blank');
   }
