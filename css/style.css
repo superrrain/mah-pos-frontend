@@ -693,6 +693,7 @@ body {
   margin-bottom: 0.4rem;
   display: -webkit-box;
   -webkit-line-clamp: 2;
+  line-clamp: 2;
   -webkit-box-orient: vertical;
   overflow: hidden;
   min-height: 2.4em;
@@ -929,12 +930,15 @@ body {
   font-weight: 700;
   text-align: center;
   padding: 0 2px;
+  -webkit-appearance: none;
   -moz-appearance: textfield;
+  appearance: textfield;
 }
 
 .qty-input::-webkit-outer-spin-button,
 .qty-input::-webkit-inner-spin-button {
   -webkit-appearance: none;
+  appearance: none;
   margin: 0;
 }
 
