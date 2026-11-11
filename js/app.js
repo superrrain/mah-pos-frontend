@@ -37,8 +37,8 @@
   // 1. BACKEND BRIDGE & FALLBACK HANDLER
   // ============================================================================
   // KONFIGURASI GLOBAL REST API VERCEL <-> GOOGLE APPS SCRIPT
-const OFFICIAL_GAS_URL = 'https://script.google.com/macros/s/AKfycbwSbFJJOhxlU6SMz7NbMJUT3QqE5n1oBJASYa4R4tOVkMZt1t3_TlCd8iF6lnLPxtZV/exec';
-if (localStorage.getItem('MAH_POS_API_URL') && (localStorage.getItem('MAH_POS_API_URL').indexOf('AKfycbz') !== -1 || localStorage.getItem('MAH_POS_API_URL').indexOf('AKfycby') !== -1)) {
+const OFFICIAL_GAS_URL = 'https://script.google.com/macros/s/AKfycbyV4vgznpWIaKe0gL3piduh9nECJUPefZ9-Aids_mJRGWUi8JQh7-X5-ccow8swAIU/exec';
+if (!localStorage.getItem('MAH_POS_API_URL')) {
   localStorage.setItem('MAH_POS_API_URL', OFFICIAL_GAS_URL);
 }
 
