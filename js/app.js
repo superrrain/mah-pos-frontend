@@ -770,7 +770,7 @@ const GasBridge = {
     var mobLogout = document.getElementById('btnLogoutAppMobile');
     if (mobLogout) mobLogout.style.display = 'inline-flex';
     var mobDock = document.getElementById('mobileBottomDock');
-    if (mobDock) mobDock.style.display = 'flex';
+    if (mobDock) mobDock.style.display = '';
 
     // Tampilkan menu khusus Master jika peran = Master
     var isMaster = (user.peran.toLowerCase() === 'master');
@@ -779,9 +779,9 @@ const GasBridge = {
     var navPengguna = document.getElementById('navPenggunaBtn');
     if (navPengguna) navPengguna.style.display = isMaster ? 'flex' : 'none';
     var mobPengaturan = document.getElementById('mobileNavPengaturanBtn');
-    if (mobPengaturan) mobPengaturan.style.display = isMaster ? 'flex' : 'none';
+    if (mobPengaturan) mobPengaturan.style.display = isMaster ? '' : 'none';
     var mobPengguna = document.getElementById('mobileNavPenggunaBtn');
-    if (mobPengguna) mobPengguna.style.display = isMaster ? 'flex' : 'none';
+    if (mobPengguna) mobPengguna.style.display = isMaster ? '' : 'none';
 
     var btnAddGood = document.getElementById('btnTambahBarangModal');
     if (btnAddGood) btnAddGood.style.display = isMaster ? 'inline-block' : 'none';

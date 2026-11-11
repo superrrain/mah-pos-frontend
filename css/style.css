@@ -379,23 +379,33 @@ body {
    2. HEADER & BOTTOM DOCK UNTUK MOBILE (Android & iPhone)
    ========================================================================== */
 .mobile-top-header {
-  display: none;
+  display: none !important;
 }
 
 .mobile-bottom-dock {
-  display: none;
+  display: none !important;
 }
 
 .mobile-floating-cart-bar {
-  display: none;
+  display: none !important;
 }
 
 .mobile-drawer-header {
-  display: none;
+  display: none !important;
 }
 
 .cart-backdrop {
-  display: none;
+  display: none !important;
+}
+
+@media (min-width: 768px) {
+  .mobile-top-header,
+  .mobile-bottom-dock,
+  .mobile-floating-cart-bar,
+  .mobile-drawer-header,
+  .cart-backdrop {
+    display: none !important;
+  }
 }
 
 /* ==========================================================================
@@ -450,6 +460,10 @@ body {
   display: flex;
   flex-direction: column;
   gap: 0.85rem;
+  position: sticky;
+  top: 1.25rem;
+  max-height: calc(100vh - 2.5rem);
+  overflow-y: auto;
 }
 
 /* Search Bar & Toolbar */
