@@ -31,6 +31,19 @@ const server = http.createServer((req, res) => {
   });
 });
 
+server.on('error', (err) => {
+  if (err.code === 'EADDRINUSE') {
+    console.log('================================================================');
+    console.log(`Port ${PORT} sudah aktif berjalan di latar belakang!`);
+    console.log(`Membuka browser otomatis ke: http://localhost:${PORT}`);
+    console.log('================================================================');
+    exec(`start http://localhost:${PORT}`);
+    setTimeout(() => process.exit(0), 1000);
+  } else {
+    console.error('Server error:', err);
+  }
+});
+
 server.listen(PORT, () => {
   console.log('================================================================');
   console.log(`MAH POS Lokal berjalan di: http://localhost:${PORT}`);
@@ -39,4 +52,3 @@ server.listen(PORT, () => {
   console.log('================================================================');
   exec(`start http://localhost:${PORT}`);
 });
-
