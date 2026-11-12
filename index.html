@@ -9,13 +9,13 @@
   <link rel="apple-touch-icon" href="assets/logo.jpg">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700;800&family=Outfit:wght@500;600;700;800;900&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
   <!-- html2pdf.js & jsPDF CDN untuk ekspor PDF instan di browser -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
   <!-- Chart.js CDN untuk visualisasi grafik analitik penjualan -->
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-  <link rel="stylesheet" href="css/style.css?v=2.2">
+  <link rel="stylesheet" href="css/style.css?v=2.3">
 </head>
 <body>
 
@@ -546,12 +546,12 @@
                   <!-- Kontrol Upload & URL -->
                   <div style="flex: 1; min-width: 220px; display: flex; flex-direction: column; gap: 0.4rem;">
                     <div style="display: flex; gap: 0.5rem; align-items: center;">
-                      <label for="settingLogoFileInput" class="btn-quick-cash" style="background: var(--slate-800); color: white; padding: 0.45rem 0.85rem; font-size: 0.82rem; cursor: pointer; border-radius: var(--radius-md); display: inline-flex; align-items: center; gap: 0.4rem;">
+                      <label for="settingLogoFileInput" class="btn-primary-action" style="background: linear-gradient(135deg, #10b981 0%, #059669 100%); color: white; padding: 0.45rem 0.95rem; font-size: 0.82rem; font-weight: 600; cursor: pointer; border-radius: var(--radius-md); display: inline-flex; align-items: center; gap: 0.4rem; box-shadow: 0 2px 8px rgba(16, 185, 129, 0.25);">
                         <svg class="icon icon-sm" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="17 8 12 3 7 8"></polyline><line x1="12" y1="3" x2="12" y2="15"></line></svg>
                         Unggah File Logo
                       </label>
                       <input type="file" id="settingLogoFileInput" accept="image/*" style="display: none;">
-                      <button type="button" class="btn-quick-cash" id="btnHapusLogo" style="background: var(--white); color: var(--danger); border: 1px solid var(--slate-300); padding: 0.45rem 0.75rem; font-size: 0.82rem; display: none;">
+                      <button type="button" class="btn-danger-outline" id="btnHapusLogo" style="background: #fff1f2; color: #e11d48; border: 1.5px solid #fecdd3; padding: 0.45rem 0.85rem; font-size: 0.82rem; font-weight: 600; border-radius: var(--radius-md); display: none; align-items: center; gap: 0.35rem; cursor: pointer;">
                         Hapus Logo
                       </button>
                     </div>
@@ -716,7 +716,7 @@
       <!-- ================================================================
            VIEW 6: MAHEX DELIVERY (GENERATOR FAKTUR PENGIRIMAN & EKSPEDISI)
            ================================================================ -->
-      <section class="view-section" id="viewMahexDelivery" style="display: none;">
+      <section class="view-section" id="viewMahexDelivery">
         <div class="card-panel">
           <!-- Header Banner MAHEX -->
           <div class="mahex-banner-card">
@@ -1217,7 +1217,7 @@
   </div>
 
   <!-- SCRIPT LOGIKA APLIKASI -->
-  <script src="js/app.js?v=2.2"></script>
+  <script src="js/app.js?v=2.3"></script>
   <script>
     // Inisialisasi modal konfigurasi endpoint API
     document.addEventListener('DOMContentLoaded', function() {
