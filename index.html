@@ -1337,12 +1337,23 @@
                 <span>Panorama Sales Lengkap (Multi-Sheet)</span>
               </div>
               <div class="excel-type-card-desc">
-                Buku kerja 1 file berisi 4 lembar kerja (Sheet):
-                <strong>(1) Panorama Item x Pembeli</strong>, <strong>(2) Rekap Nota Invoice</strong>, <strong>(3) Ranking Produk Terlaris</strong>, dan <strong>(4) Ringkasan Eksekutif</strong>.
+                Buku kerja 1 file berisi 5 lembar kerja (Sheet):
+                <strong>(1) Rincian Beli per Toko</strong>, <strong>(2) Panorama Item x Pembeli</strong>, <strong>(3) Rekap Nota Invoice</strong>, <strong>(4) Ranking Produk Terlaris</strong>, dan <strong>(5) Ringkasan Eksekutif</strong>.
               </div>
             </div>
 
-            <!-- Card 2: Panorama Items Only -->
+            <!-- Card 2: Rincian Beli per Toko Saja -->
+            <div class="excel-type-card" data-type="rincian_toko" onclick="selectExcelExportType('rincian_toko')">
+              <div class="excel-type-card-title">
+                <svg class="icon icon-excel-sm" viewBox="0 0 24 24"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path><polyline points="9 22 9 12 15 12 15 22"></polyline></svg>
+                <span>Rincian Pembelian per Toko / Pelanggan</span>
+              </div>
+              <div class="excel-type-card-desc">
+                Format khusus per toko: mengelompokkan setiap toko/pelanggan membeli produk apa saja, kuantiti yang dibeli, dan total nilai belanjanya.
+              </div>
+            </div>
+
+            <!-- Card 3: Panorama Items Only -->
             <div class="excel-type-card" data-type="panorama_items" onclick="selectExcelExportType('panorama_items')">
               <div class="excel-type-card-title">
                 <svg class="icon icon-excel-sm" viewBox="0 0 24 24"><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"></path><rect x="8" y="2" width="8" height="4" rx="1" ry="1"></rect></svg>
@@ -1353,7 +1364,7 @@
               </div>
             </div>
 
-            <!-- Card 3: Rekap Nota Saja -->
+            <!-- Card 4: Rekap Nota Saja -->
             <div class="excel-type-card" data-type="rekap_nota" onclick="selectExcelExportType('rekap_nota')">
               <div class="excel-type-card-title">
                 <svg class="icon icon-excel-sm" viewBox="0 0 24 24"><line x1="8" y1="6" x2="21" y2="6"></line><line x1="8" y1="12" x2="21" y2="12"></line><line x1="8" y1="18" x2="21" y2="18"></line></svg>
