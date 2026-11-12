@@ -3876,7 +3876,7 @@ const GasBridge = {
     var end = ExcelExportState.period === 'custom' ? (document.getElementById('excelEndDate').value || '') : '';
 
     GasBridge.call('getPanoramaSalesExportData', [ExcelExportState.period, start, end], function (res) {
-      if (res && res.success && res.panoramaRows && res.panoramaRows.length > 0 && res.produkRanking && res.produkRanking.length > 0) {
+      if (res && res.success) {
         ExcelExportState.cachedData = res;
         updateExcelPreviewUI(res);
       } else {
@@ -3900,27 +3900,34 @@ const GasBridge = {
     if (custEl) custEl.textContent = (summary.totalPelangganUnik || 0).toLocaleString('id-ID') + ' Orang';
   }
 
-  function parseDateRobust(tglVal) {
-    if (!tglVal) return new Date();
+  function parseDateRobust(tglVal, noInvoice) {
+    if (!tglVal) {
+      if (noInvoice) {
+        var invM = String(noInvoice).match(/INV-(\d{4})(\d{2})-/i);
+        if (invM) return new Date(parseInt(invM[1], 10), parseInt(invM[2], 10) - 1, 1, 12, 0, 0);
+      }
+      return new Date();
+    }
     if (tglVal instanceof Date) return tglVal;
     var s = String(tglVal).trim();
 
-    // 1. Cek format DD/MM/YYYY atau DD-MM-YYYY
+    // 1. Cek format DD/MM/YYYY atau DD-MM-YYYY (Format Indonesia)
     var dmyMatch = s.match(/^(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{4})(.*)$/);
     if (dmyMatch) {
       var day = parseInt(dmyMatch[1], 10);
       var month = parseInt(dmyMatch[2], 10) - 1;
       var year = parseInt(dmyMatch[3], 10);
       var timePart = dmyMatch[4].trim();
-      var hour = 0, min = 0;
+      var hour = 0, min = 0, sec = 0;
       if (timePart) {
-        var tMatch = timePart.match(/(\d{1,2}):(\d{1,2})/);
+        var tMatch = timePart.match(/(\d{1,2}):(\d{1,2})(?::(\d{1,2}))?/);
         if (tMatch) {
-          hour = parseInt(tMatch[1], 10);
-          min = parseInt(tMatch[2], 10);
+          hour = parseInt(tMatch[1], 10) || 0;
+          min = parseInt(tMatch[2], 10) || 0;
+          sec = parseInt(tMatch[3], 10) || 0;
         }
       }
-      var dObj = new Date(year, month, day, hour, min);
+      var dObj = new Date(year, month, day, hour, min, sec);
       if (!isNaN(dObj.getTime())) return dObj;
     }
 
@@ -3929,6 +3936,16 @@ const GasBridge = {
     if (!isNaN(d.getTime())) return d;
     d = new Date(s.replace(' ', 'T'));
     if (!isNaN(d.getTime())) return d;
+
+    // 3. Fallback cerdas: Ambil Tahun dan Bulan dari nomor invoice resmi (cth: INV-202611-067)
+    if (noInvoice) {
+      var invMatch = String(noInvoice).match(/INV-(\d{4})(\d{2})-/i);
+      if (invMatch) {
+        var invYear = parseInt(invMatch[1], 10);
+        var invMonth = parseInt(invMatch[2], 10) - 1;
+        return new Date(invYear, invMonth, 1, 12, 0, 0);
+      }
+    }
 
     return new Date();
   }
@@ -3994,7 +4011,7 @@ const GasBridge = {
 
     // Filter transaksi berdasarkan periode yang dipilih
     var filtered = (rawTransactions || []).filter(function (t) {
-      var d = parseDateRobust(t.tanggal);
+      var d = parseDateRobust(t.tanggal, t.noInvoice);
       var tTime = d.getTime();
 
       if (period === 'today') return tTime >= todayMidnight;
@@ -4006,7 +4023,8 @@ const GasBridge = {
         var isNovStr = sLower.indexOf(curYear + '-' + mStr) !== -1 ||
                        sLower.indexOf('/' + mStr + '/' + curYear) !== -1 ||
                        sLower.indexOf('-' + mStr + '-' + curYear) !== -1 ||
-                       sLower.indexOf('nov') !== -1;
+                       sLower.indexOf('nov') !== -1 ||
+                       String(t.noInvoice || '').indexOf('INV-' + curYear + mStr) === 0;
         return isNov || isNovStr;
       }
       if (period === 'last_month') {
@@ -4021,47 +4039,6 @@ const GasBridge = {
       }
       return true; // 'all' atau 'semua'
     });
-
-    // JIKA filtered MASIH KOSONG NAMUN SERVER MENYATAKAN ADA TRANSAKSI (MISAL 68 NOTA NOVEMBER):
-    // Kita buatkan representasi transaksi dari data analitik server agar laporan tidak pernah kosong!
-    if (filtered.length === 0) {
-      var targetTrxCount = Number(summary.grandTotalTrx) || 68;
-      var targetOmset = Number(summary.grandTotalOmset) || 36010500;
-      var avgPerTrx = Math.round(targetOmset / targetTrxCount) || 529000;
-
-      var storeNames = [
-        { name: 'Toko Berkah Abadi', wa: '08123456789' },
-        { name: 'CV Maju Jaya', wa: '085974984834' },
-        { name: 'Toko Kebersihan Resik', wa: '08139876543' },
-        { name: 'Bpk. Ahmad (Kantor)', wa: '081234567890' },
-        { name: 'Toko Sentosa Makmur', wa: '087812345678' },
-        { name: 'Toko ATK Bintang', wa: '085298761234' },
-        { name: 'Pelanggan Umum', wa: '-' }
-      ];
-
-      for (var k = 1; k <= targetTrxCount; k++) {
-        var seqStr = ('00' + k).slice(-3);
-        var dayNum = Math.min(12, Math.max(1, Math.floor(((k - 1) / targetTrxCount) * 12) + 1));
-        var dayStr = ('0' + dayNum).slice(-2);
-        var tglSynthetic = curYear + '-' + ('0' + (curMonth + 1)).slice(-2) + '-' + dayStr + ' 10:' + (10 + (k % 45));
-        var st = storeNames[(k - 1) % storeNames.length];
-
-        filtered.push({
-          noInvoice: 'INV-' + curYear + ('0' + (curMonth + 1)).slice(-2) + '-' + seqStr,
-          tanggal: tglSynthetic,
-          kasir: (AppState.currentUser && AppState.currentUser.namaLengkap) || 'Heni Ratna S',
-          pelanggan: st.name,
-          noWhatsApp: st.wa,
-          subtotal: avgPerTrx,
-          diskon: 0,
-          total: avgPerTrx,
-          bayar: Math.ceil(avgPerTrx / 50000) * 50000,
-          kembali: (Math.ceil(avgPerTrx / 50000) * 50000) - avgPerTrx,
-          metodeBayar: (k % 3 === 0) ? 'Transfer Bank' : ((k % 5 === 0) ? 'QRIS' : 'Tunai'),
-          catatan: 'Transaksi November'
-        });
-      }
-    }
 
     var totalOmset = summary.grandTotalOmset || filtered.reduce(function (sum, t) { return sum + (Number(t.total) || 0); }, 0);
     var totalQty = summary.grandTotalQty || allProds.reduce(function (sum, p) { return sum + (Number(p.qty) || 0); }, 0) || (filtered.length * 2);
@@ -4145,23 +4122,15 @@ const GasBridge = {
           });
         });
       } else {
-        var itm = pList.length > 0 ? pList[pIdx % pList.length] : null;
-        pIdx++;
-
-        var itmKode = (itm && (itm.kode || itm.kodeBarang)) || 'ATK-01';
-        var itmNama = (itm && (itm.nama || itm.namaBarang)) || 'Produk ATK ' + t.noInvoice;
-        var itmHarga = (itm && (itm.hargaJual || (itm.qty > 0 ? Math.round(itm.omset / itm.qty) : 0))) || Number(t.total) || 25000;
-        var itmQty = Math.max(1, Math.round((Number(t.total) || 25000) / itmHarga)) || 1;
-        var subtotal = itmQty * itmHarga;
-
-        tokoGroupMap[tCust].totalOmsetToko += Number(t.total) || subtotal;
-        tokoGroupMap[tCust].totalQtyToko += itmQty;
+        var tTot = Number(t.total) || 0;
+        tokoGroupMap[tCust].totalOmsetToko += tTot;
+        tokoGroupMap[tCust].totalQtyToko += 1;
         tokoGroupMap[tCust].items.push({
-          kode: itmKode,
-          nama: itmNama,
-          qty: itmQty,
-          hargaSatuan: itmHarga,
-          totalBelanja: subtotal,
+          kode: '-',
+          nama: 'Transaksi Penjualan (' + t.noInvoice + ')',
+          qty: 1,
+          hargaSatuan: tTot,
+          totalBelanja: tTot,
           noInvoice: t.noInvoice,
           tanggal: t.tanggal
         });
@@ -4173,13 +4142,13 @@ const GasBridge = {
           noWhatsApp: tWa,
           kasir: t.kasir || '-',
           metodeBayar: t.metodeBayar || 'Tunai',
-          kodeBarang: itmKode,
-          namaBarang: itmNama,
-          qty: itmQty,
-          hargaSatuan: itmHarga,
-          subtotalItem: subtotal,
+          kodeBarang: '-',
+          namaBarang: 'Transaksi Penjualan (' + t.noInvoice + ')',
+          qty: 1,
+          hargaSatuan: tTot,
+          subtotalItem: tTot,
           diskonNota: t.diskon || 0,
-          totalAkhirNota: Number(t.total) || subtotal,
+          totalAkhirNota: tTot,
           catatanNota: t.catatan || ''
         });
       }
@@ -4244,7 +4213,7 @@ const GasBridge = {
     var end = ExcelExportState.period === 'custom' ? (document.getElementById('excelEndDate').value || '') : '';
 
     GasBridge.call('getPanoramaSalesExportData', [ExcelExportState.period, start, end], function (res) {
-      if (res && res.success && res.panoramaRows && res.panoramaRows.length > 0 && res.produkRanking && res.produkRanking.length > 0) {
+      if (res && res.success) {
         ExcelExportState.cachedData = res;
         generateExcelSpreadsheet(res);
         resetDownloadBtnState();
