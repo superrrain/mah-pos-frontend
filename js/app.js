@@ -415,6 +415,8 @@ const GasBridge = {
     if (btnOpenCart) btnOpenCart.addEventListener('click', openMobileCartDrawer);
     if (btnCloseCart) btnCloseCart.addEventListener('click', closeMobileCartDrawer);
     if (cartBackdrop) cartBackdrop.addEventListener('click', closeMobileCartDrawer);
+    var btnHeaderCart = document.getElementById('btnHeaderMobileCart');
+    if (btnHeaderCart) btnHeaderCart.addEventListener('click', openMobileCartDrawer);
 
     // 4.D Mobile Header Quick Actions
     var btnRefMob = document.getElementById('btnRefreshAppMobile');
@@ -1267,8 +1269,13 @@ const GasBridge = {
     var floatCountEl = document.getElementById('floatingCartCount');
     var floatTotalEl = document.getElementById('floatingCartTotal');
     var floatBarEl = document.getElementById('mobileFloatingCartBar');
+    var headerCartCount = document.getElementById('headerCartCount');
     if (floatCountEl) floatCountEl.textContent = totalQty;
     if (floatTotalEl) floatTotalEl.textContent = formatRupiah(grand);
+    if (headerCartCount) {
+      headerCartCount.textContent = totalQty;
+      headerCartCount.style.display = totalQty > 0 ? 'inline-block' : 'none';
+    }
     if (floatBarEl) {
       if (totalQty > 0 && window.innerWidth < 768) {
         floatBarEl.style.display = 'flex';

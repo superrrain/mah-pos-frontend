@@ -379,27 +379,8 @@ body {
 /* ==========================================================================
    2. HEADER & BOTTOM DOCK UNTUK MOBILE (Android & iPhone)
    ========================================================================== */
-.mobile-top-header {
-  display: none !important;
-}
-
-.mobile-bottom-dock {
-  display: none !important;
-}
-
-.mobile-floating-cart-bar {
-  display: none !important;
-}
-
-.mobile-drawer-header {
-  display: none !important;
-}
-
-.cart-backdrop {
-  display: none !important;
-}
-
-@media (min-width: 768px) {
+/* Elemen mobile disembunyikan pada layar desktop lebar (>= 1024px) */
+@media (min-width: 1024px) {
   .mobile-top-header,
   .mobile-bottom-dock,
   .mobile-floating-cart-bar,
@@ -1211,32 +1192,164 @@ body {
    RESPONSIVE MEDIA QUERIES (TABLET & MOBILE HP)
    ========================================================================== */
 
-/* TABLET (768px - 1080px) */
-@media (max-width: 1080px) and (min-width: 768px) {
+/* --------------------------------------------------------------------------
+   1. TABLET & FOLDABLE SCREEN (768px - 1023px, iPad Portrait & Galaxy Z Fold)
+   -------------------------------------------------------------------------- */
+@media (min-width: 768px) and (max-width: 1023px) {
+  html, body {
+    height: 100vh;
+    overflow: hidden;
+  }
+  .pos-app-wrapper {
+    height: 100vh;
+    overflow: hidden;
+  }
+  .app-container {
+    height: 100vh !important;
+    padding: 0.6rem 0.75rem !important;
+    overflow-y: auto !important;
+    box-sizing: border-box !important;
+  }
+
+  /* Sidebar berubah menjadi Modern Icon Rail 64px */
   .pos-sidebar {
-    width: 210px;
+    width: 64px !important;
+    min-width: 64px !important;
+    padding: 0.65rem 0.25rem !important;
+    align-items: center !important;
+  }
+  .sidebar-brand-box {
+    padding: 0.4rem 0 !important;
+    justify-content: center !important;
+    border-bottom: 1px solid var(--slate-100) !important;
+    width: 100% !important;
+  }
+  .sidebar-brand-text {
+    display: none !important;
+  }
+  .sidebar-logo-frame {
+    width: 36px !important;
+    height: 36px !important;
+  }
+  .sidebar-nav-list {
+    padding: 0.65rem 0 !important;
+    align-items: center !important;
+    gap: 0.4rem !important;
+    width: 100% !important;
+  }
+  .nav-btn {
+    width: 44px !important;
+    height: 44px !important;
+    padding: 0 !important;
+    justify-content: center !important;
+    border-radius: var(--radius-md) !important;
+  }
+  .nav-btn span {
+    display: none !important;
+  }
+  .nav-btn .icon {
+    width: 20px !important;
+    height: 20px !important;
+  }
+  .sidebar-footer {
+    padding: 0.4rem 0 !important;
+    width: 100% !important;
+    align-items: center !important;
+  }
+  .sidebar-user-card {
+    justify-content: center !important;
+    padding: 0.2rem !important;
+  }
+  .sidebar-user-card .user-meta-info {
+    display: none !important;
+  }
+  .sidebar-action-bar {
+    flex-direction: column !important;
+    gap: 0.35rem !important;
+    align-items: center !important;
+    width: 100% !important;
+  }
+  .btn-sidebar-action {
+    width: 40px !important;
+    height: 36px !important;
+    padding: 0 !important;
+    justify-content: center !important;
+  }
+  .btn-sidebar-action span {
+    display: none !important;
+  }
+
+  /* POS Layout pas 1 Layar di Tablet & Foldable */
+  #viewPos.view-section.active {
+    height: calc(100vh - 1.2rem) !important;
+    display: flex !important;
+    flex-direction: column !important;
+    overflow: hidden !important;
   }
   .pos-layout {
-    grid-template-columns: 1fr 330px;
-    gap: 1rem;
+    display: grid !important;
+    grid-template-columns: 1fr 315px !important;
+    gap: 0.65rem !important;
+    height: 100% !important;
+    min-height: 0 !important;
+    overflow: hidden !important;
+  }
+  .pos-catalog-card {
+    height: 100% !important;
+    min-height: 0 !important;
+    display: flex !important;
+    flex-direction: column !important;
+    overflow: hidden !important;
+    padding: 0.65rem 0.75rem !important;
   }
   .goods-grid {
-    grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
-    gap: 0.85rem;
+    display: grid !important;
+    grid-template-columns: repeat(auto-fill, minmax(130px, 1fr)) !important;
+    gap: 0.5rem !important;
+    flex: 1 !important;
+    min-height: 0 !important;
+    overflow-y: auto !important;
+    padding-right: 0.2rem !important;
+    align-content: start !important;
+  }
+  .good-card-visual {
+    height: 50px !important;
+  }
+  .good-card-icon-wrap {
+    font-size: 1.6rem !important;
+  }
+  .pos-cart-card {
+    height: 100% !important;
+    min-height: 0 !important;
+    display: flex !important;
+    flex-direction: column !important;
+    overflow: hidden !important;
+    padding: 0.65rem 0.75rem !important;
+    gap: 0.3rem !important;
+    position: static !important;
+    max-height: none !important;
+    transform: none !important;
+    visibility: visible !important;
+    pointer-events: auto !important;
+    border-radius: var(--radius-xl) !important;
+    border: 1.5px solid var(--slate-200) !important;
+    box-shadow: var(--shadow-sm) !important;
   }
 }
 
-/* MOBILE HP (Android & iPhone - Screen < 768px) */
+/* --------------------------------------------------------------------------
+   2. MOBILE SMARTPHONE (Android & iPhone - Screen < 768px)
+   -------------------------------------------------------------------------- */
 @media (max-width: 767px) {
   .pos-sidebar {
     display: none !important;
   }
 
   .mobile-top-header {
-    display: flex;
+    display: flex !important;
     align-items: center;
     justify-content: space-between;
-    padding: 0.75rem 1rem;
+    padding: 0.65rem 1rem;
     background: var(--white);
     border-bottom: 1.5px solid var(--slate-200);
     position: sticky;
@@ -1252,16 +1365,17 @@ body {
   }
 
   .mobile-logo-img {
-    width: 36px;
-    height: 36px;
+    width: 34px;
+    height: 34px;
     border-radius: var(--radius-sm);
     border: 1px solid var(--slate-200);
     object-fit: contain;
   }
 
   .mobile-brand-name {
-    font-size: 1.15rem;
+    font-size: 1.1rem;
     font-weight: 800;
+    font-family: var(--font-heading);
     color: var(--slate-900);
     letter-spacing: -0.3px;
   }
@@ -1269,45 +1383,52 @@ body {
   .mobile-header-actions {
     display: flex;
     align-items: center;
-    gap: 0.5rem;
+    gap: 0.45rem;
   }
 
   .user-pill-mobile {
     background: var(--primary-light);
     border: 1px solid var(--primary-border);
     color: #065f46;
-    font-size: 0.75rem;
+    font-size: 0.72rem;
     font-weight: 700;
-    padding: 0.25rem 0.6rem;
+    font-family: var(--font-heading);
+    padding: 0.2rem 0.55rem;
     border-radius: var(--radius-full);
   }
 
   .app-container {
-    padding: 0.85rem;
+    padding: 0.65rem !important;
   }
 
   .pos-layout {
-    display: block;
-    padding-bottom: 140px;
+    display: block !important;
+    padding-bottom: 140px !important;
+    height: auto !important;
+    min-height: auto !important;
+    overflow: visible !important;
   }
 
   .pos-catalog-card {
-    padding: 1rem;
-    border-radius: var(--radius-lg);
+    padding: 0.75rem !important;
+    border-radius: var(--radius-lg) !important;
+    height: auto !important;
+    overflow: visible !important;
   }
 
   .goods-grid {
-    grid-template-columns: repeat(2, 1fr);
-    gap: 0.75rem;
-    max-height: none;
+    grid-template-columns: repeat(2, 1fr) !important;
+    gap: 0.55rem !important;
+    max-height: none !important;
+    overflow: visible !important;
   }
 
   .good-card-visual {
-    height: 95px;
+    height: 56px !important;
   }
 
   .good-card-icon-wrap {
-    font-size: 2.2rem;
+    font-size: 1.8rem !important;
   }
 
   /* Cart Panel as Mobile Slide-Up Drawer / Bottom Sheet */
@@ -1319,67 +1440,72 @@ body {
     max-height: 88vh !important;
     background: var(--white) !important;
     z-index: 1000 !important;
-    border-radius: 24px 24px 0 0 !important;
+    border-radius: 20px 20px 0 0 !important;
     border: none !important;
-    box-shadow: 0 -8px 32px rgba(0,0,0,0.25) !important;
-    transform: translateY(105%);
-    transition: transform 0.35s cubic-bezier(0.16, 1, 0.3, 1);
+    box-shadow: 0 -8px 32px rgba(0,0,0,0.3) !important;
+    transform: translateY(105%) !important;
+    visibility: hidden !important;
+    pointer-events: none !important;
+    transition: transform 0.32s cubic-bezier(0.16, 1, 0.3, 1), visibility 0.32s ease !important;
     overflow-y: auto !important;
-    padding: 1.25rem 1.25rem 2.5rem 1.25rem !important;
+    padding: 1rem 1rem 2.5rem 1rem !important;
   }
 
   .pos-cart-card.mobile-open {
     transform: translateY(0) !important;
+    visibility: visible !important;
+    pointer-events: auto !important;
   }
 
   .cart-backdrop {
-    display: block;
-    position: fixed;
-    inset: 0;
-    background: rgba(15, 23, 42, 0.6);
-    backdrop-filter: blur(3px);
-    z-index: 999;
-    opacity: 0;
-    pointer-events: none;
-    transition: opacity 0.3s ease;
+    display: block !important;
+    position: fixed !important;
+    inset: 0 !important;
+    background: rgba(15, 23, 42, 0.6) !important;
+    backdrop-filter: blur(4px) !important;
+    z-index: 999 !important;
+    opacity: 0 !important;
+    pointer-events: none !important;
+    transition: opacity 0.3s ease !important;
   }
 
   .cart-backdrop.active {
-    opacity: 1;
-    pointer-events: auto;
+    opacity: 1 !important;
+    pointer-events: auto !important;
   }
 
   .mobile-drawer-header {
-    display: flex;
+    display: flex !important;
     align-items: center;
     justify-content: space-between;
-    padding-bottom: 0.85rem;
+    padding-bottom: 0.65rem;
     border-bottom: 1.5px solid var(--slate-100);
-    margin-bottom: 0.65rem;
+    margin-bottom: 0.5rem;
   }
 
   .drawer-title-box {
     display: flex;
     align-items: center;
     gap: 0.5rem;
-    font-size: 1.15rem;
+    font-size: 1rem;
     font-weight: 800;
+    font-family: var(--font-heading);
     color: var(--slate-900);
   }
 
   /* Mobile Bottom Dock Navigation */
   .mobile-bottom-dock {
-    display: flex;
+    display: flex !important;
     align-items: center;
     justify-content: space-around;
-    background: var(--white);
+    background: var(--white) !important;
     border-top: 1.5px solid var(--slate-200);
     position: fixed;
     bottom: 0;
     left: 0;
     right: 0;
-    height: 62px;
-    z-index: 990;
+    height: 58px;
+    z-index: 900;
     box-shadow: 0 -4px 16px rgba(0,0,0,0.06);
     padding-bottom: env(safe-area-inset-bottom, 0);
   }
@@ -1397,6 +1523,7 @@ body {
     color: var(--slate-500);
     font-size: 0.72rem;
     font-weight: 600;
+    font-family: var(--font-heading);
     cursor: pointer;
     transition: var(--transition);
   }
@@ -1413,19 +1540,20 @@ body {
 
   /* Floating Cart Bar */
   .mobile-floating-cart-bar {
-    position: fixed;
-    bottom: 72px;
-    left: 0.85rem;
-    right: 0.85rem;
-    background: var(--slate-900);
+    position: fixed !important;
+    bottom: 68px !important;
+    left: 0.75rem !important;
+    right: 0.75rem !important;
+    background: linear-gradient(135deg, #064e3b 0%, #0f172a 100%) !important;
     color: var(--white);
-    border-radius: var(--radius-xl);
-    padding: 0.75rem 1rem;
-    display: flex;
+    border-radius: var(--radius-full);
+    padding: 0.55rem 0.85rem;
+    display: flex !important;
     align-items: center;
     justify-content: space-between;
-    z-index: 950;
-    box-shadow: 0 8px 24px rgba(15, 23, 42, 0.28);
+    z-index: 920;
+    box-shadow: 0 8px 24px rgba(15, 23, 42, 0.35);
+    border: 1px solid rgba(255, 255, 255, 0.15);
   }
 
   .floating-cart-info {
