@@ -15,7 +15,9 @@
   <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
   <!-- Chart.js CDN untuk visualisasi grafik analitik penjualan -->
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-  <link rel="stylesheet" href="css/style.css?v=2.3">
+  <!-- SheetJS CDN untuk pembuatan file Microsoft Excel (.xlsx) murni -->
+  <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+  <link rel="stylesheet" href="css/style.css?v=2.4">
 </head>
 <body>
 
@@ -305,10 +307,14 @@
               <svg class="icon" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>
               Riwayat Transaksi Penjualan ATK
             </div>
-            <div style="display: flex; gap: 0.5rem; flex-wrap: wrap;">
-              <input type="text" id="historySearchInput" class="input-compact" placeholder="Cari No. Invoice / Pelanggan..." style="width: 220px;">
-              <input type="date" id="historyDateInput" class="input-compact" style="width: 150px;">
+            <div style="display: flex; gap: 0.5rem; flex-wrap: wrap; align-items: center;">
+              <input type="text" id="historySearchInput" class="input-compact" placeholder="Cari No. Invoice / Pelanggan..." style="width: 200px;">
+              <input type="date" id="historyDateInput" class="input-compact" style="width: 140px;">
               <button type="button" class="btn-quick-cash" id="btnFilterHistory" style="padding: 0.45rem 0.85rem;">Cari</button>
+              <button type="button" class="btn-excel-export" id="btnOpenExcelModalTable" onclick="openExcelExportModal()" title="Tarik & Ekspor Data Penjualan ke Excel">
+                <svg class="icon icon-excel" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="8" y1="13" x2="16" y2="13"></line><line x1="8" y1="17" x2="16" y2="17"></line><polyline points="10 9 9 9 8 9"></polyline></svg>
+                <span>Tarik Data Excel</span>
+              </button>
             </div>
           </div>
 
@@ -351,12 +357,18 @@
                 </div>
               </div>
 
-              <!-- Chips Filter Periode -->
-              <div class="analytics-period-bar">
-                <button type="button" class="period-chip-btn active" data-period="all" onclick="changeAnalyticsPeriod('all')">Semua Waktu</button>
-                <button type="button" class="period-chip-btn" data-period="month" onclick="changeAnalyticsPeriod('month')">Bulan Ini</button>
-                <button type="button" class="period-chip-btn" data-period="7days" onclick="changeAnalyticsPeriod('7days')">7 Hari Terakhir</button>
-                <button type="button" class="period-chip-btn" data-period="today" onclick="changeAnalyticsPeriod('today')">Hari Ini</button>
+              <!-- Chips Filter Periode & Tombol Tarik Data Excel -->
+              <div style="display: flex; gap: 0.75rem; align-items: center; flex-wrap: wrap;">
+                <div class="analytics-period-bar">
+                  <button type="button" class="period-chip-btn active" data-period="all" onclick="changeAnalyticsPeriod('all')">Semua Waktu</button>
+                  <button type="button" class="period-chip-btn" data-period="month" onclick="changeAnalyticsPeriod('month')">Bulan Ini</button>
+                  <button type="button" class="period-chip-btn" data-period="7days" onclick="changeAnalyticsPeriod('7days')">7 Hari Terakhir</button>
+                  <button type="button" class="period-chip-btn" data-period="today" onclick="changeAnalyticsPeriod('today')">Hari Ini</button>
+                </div>
+                <button type="button" class="btn-excel-export" id="btnOpenExcelModalChart" onclick="openExcelExportModal()" title="Tarik & Ekspor Data Penjualan ke Excel">
+                  <svg class="icon icon-excel" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="8" y1="13" x2="16" y2="13"></line><line x1="8" y1="17" x2="16" y2="17"></line><polyline points="10 9 9 9 8 9"></polyline></svg>
+                  <span>Tarik Data Excel</span>
+                </button>
               </div>
             </div>
           </div>
@@ -1220,8 +1232,198 @@
     </div>
   </div>
 
+  <!-- ================================================================
+       MODAL 7: TARIK DATA & EKSPOR EXCEL (.XLSX) PANORAMA SALES
+       ================================================================ -->
+  <div class="modal-overlay" id="modalExcelExport">
+    <div class="modal-card excel-export-modal-card">
+      <div class="modal-header excel-modal-header">
+        <div class="modal-title">
+          <div class="excel-header-badge">
+            <svg class="icon icon-excel-header" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="8" y1="13" x2="16" y2="13"></line><line x1="8" y1="17" x2="16" y2="17"></line><polyline points="10 9 9 9 8 9"></polyline></svg>
+          </div>
+          <div>
+            <div style="font-family: var(--font-heading); font-size: 1.15rem; font-weight: 800; color: var(--slate-900);">
+              Tarik & Ekspor Data Penjualan ke Excel
+            </div>
+            <div style="font-size: 0.78rem; font-weight: 500; color: var(--slate-500); margin-top: 1px;">
+              Panorama sales komprehensif: detail item belanja, identitas pembeli, dan analitik omset (.xlsx)
+            </div>
+          </div>
+        </div>
+        <button type="button" class="btn-icon" id="btnCloseExcelModal" onclick="closeExcelExportModal()" title="Tutup Dialog">
+          <svg class="icon" viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+        </button>
+      </div>
+
+      <div class="modal-body excel-modal-body">
+        <!-- 1. FILTER PERIODE PENJUALAN -->
+        <div class="excel-section-group">
+          <label class="excel-section-label">
+            <svg class="icon" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line></svg>
+            1. Tentukan Periode Waktu Penjualan
+          </label>
+          <div class="excel-period-chips-grid">
+            <button type="button" class="excel-chip-btn" data-period="today" onclick="setExcelExportPeriod('today')">Hari Ini</button>
+            <button type="button" class="excel-chip-btn" data-period="7days" onclick="setExcelExportPeriod('7days')">7 Hari Terakhir</button>
+            <button type="button" class="excel-chip-btn active" data-period="month" onclick="setExcelExportPeriod('month')">Bulan Ini</button>
+            <button type="button" class="excel-chip-btn" data-period="last_month" onclick="setExcelExportPeriod('last_month')">Bulan Lalu</button>
+            <button type="button" class="excel-chip-btn" data-period="all" onclick="setExcelExportPeriod('all')">Semua Waktu</button>
+            <button type="button" class="excel-chip-btn" data-period="custom" onclick="setExcelExportPeriod('custom')">Kustom Tanggal</button>
+          </div>
+
+          <!-- Date Range Inputs for Custom Period -->
+          <div id="excelCustomDateRow" style="display: none; margin-top: 0.65rem; background: var(--slate-50); border: 1px solid var(--slate-200); border-radius: var(--radius-md); padding: 0.65rem 0.85rem; align-items: center; gap: 0.75rem; flex-wrap: wrap;">
+            <div style="flex: 1; min-width: 140px;">
+              <span style="font-size: 0.75rem; font-weight: 700; color: var(--slate-600); display: block; margin-bottom: 2px;">Dari Tanggal:</span>
+              <input type="date" id="excelStartDate" class="input-compact" style="width: 100%;">
+            </div>
+            <div style="flex: 1; min-width: 140px;">
+              <span style="font-size: 0.75rem; font-weight: 700; color: var(--slate-600); display: block; margin-bottom: 2px;">Sampai Tanggal:</span>
+              <input type="date" id="excelEndDate" class="input-compact" style="width: 100%;">
+            </div>
+            <button type="button" class="btn-quick-cash" onclick="triggerExcelCustomRefresh()" style="margin-top: 14px; padding: 0.45rem 0.9rem; background: var(--slate-900); color: white; border: none;">
+              Terapkan
+            </button>
+          </div>
+        </div>
+
+        <!-- 2. PILIHAN JENIS FILE & STRUKTUR EXCEL -->
+        <div class="excel-section-group" style="margin-top: 1rem;">
+          <label class="excel-section-label">
+            <svg class="icon" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="8" y1="13" x2="16" y2="13"></line><line x1="8" y1="17" x2="16" y2="17"></line></svg>
+            2. Pilih Format & Isi Laporan Excel
+          </label>
+          <div class="excel-type-cards-grid">
+            <!-- Card 1: Multi-Sheet Workbook -->
+            <div class="excel-type-card active" data-type="panorama_all" onclick="selectExcelExportType('panorama_all')">
+              <div class="excel-type-card-badge">Paling Lengkap & Direkomendasikan</div>
+              <div class="excel-type-card-title">
+                <svg class="icon icon-excel-sm" viewBox="0 0 24 24"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"></path><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"></path></svg>
+                <span>Panorama Sales Lengkap (Multi-Sheet)</span>
+              </div>
+              <div class="excel-type-card-desc">
+                Buku kerja 1 file berisi 4 lembar kerja (Sheet):
+                <strong>(1) Panorama Item x Pembeli</strong>, <strong>(2) Rekap Nota Invoice</strong>, <strong>(3) Ranking Produk Terlaris</strong>, dan <strong>(4) Ringkasan Eksekutif</strong>.
+              </div>
+            </div>
+
+            <!-- Card 2: Panorama Items Only -->
+            <div class="excel-type-card" data-type="panorama_items" onclick="selectExcelExportType('panorama_items')">
+              <div class="excel-type-card-title">
+                <svg class="icon icon-excel-sm" viewBox="0 0 24 24"><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"></path><rect x="8" y="2" width="8" height="4" rx="1" ry="1"></rect></svg>
+                <span>Panorama Detail Item & Pembeli</span>
+              </div>
+              <div class="excel-type-card-desc">
+                Format tabel itemized datar (flat table): 1 baris per produk terjual lengkap dengan Nama Pembeli, No. WhatsApp, Kasir, SKU, Harga, Qty, dan Subtotal.
+              </div>
+            </div>
+
+            <!-- Card 3: Rekap Nota Saja -->
+            <div class="excel-type-card" data-type="rekap_nota" onclick="selectExcelExportType('rekap_nota')">
+              <div class="excel-type-card-title">
+                <svg class="icon icon-excel-sm" viewBox="0 0 24 24"><line x1="8" y1="6" x2="21" y2="6"></line><line x1="8" y1="12" x2="21" y2="12"></line><line x1="8" y1="18" x2="21" y2="18"></line></svg>
+                <span>Rekap Nota Transaksi Saja</span>
+              </div>
+              <div class="excel-type-card-desc">
+                Tabel per nomor invoice: Tanggal, Kasir, Pembeli, WhatsApp, Metode Bayar, Subtotal, Diskon, Total Bayar, Uang Bayar, dan Kembalian.
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- 3. LIVE ESTIMASI DATA YANG AKAN DITARIK -->
+        <div class="excel-section-group" style="margin-top: 1rem;">
+          <label class="excel-section-label">
+            <svg class="icon" viewBox="0 0 24 24"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"></polyline></svg>
+            3. Estimasi Data Terdeteksi untuk Ditarik
+          </label>
+          <div class="excel-stats-preview-grid">
+            <div class="excel-stat-card">
+              <div class="excel-stat-icon" style="background: rgba(16, 185, 129, 0.12); color: #059669;">
+                <svg class="icon" viewBox="0 0 24 24"><line x1="12" y1="1" x2="12" y2="23"></line><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"></path></svg>
+              </div>
+              <div class="excel-stat-content">
+                <span class="excel-stat-title">Estimasi Total Omset</span>
+                <strong class="excel-stat-val" id="excelStatOmset">Rp 0</strong>
+              </div>
+            </div>
+
+            <div class="excel-stat-card">
+              <div class="excel-stat-icon" style="background: rgba(59, 130, 246, 0.12); color: #2563eb;">
+                <svg class="icon" viewBox="0 0 24 24"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"></path></svg>
+              </div>
+              <div class="excel-stat-content">
+                <span class="excel-stat-title">Total Item Terjual</span>
+                <strong class="excel-stat-val" id="excelStatQty">0 Pcs</strong>
+              </div>
+            </div>
+
+            <div class="excel-stat-card">
+              <div class="excel-stat-icon" style="background: rgba(245, 158, 11, 0.12); color: #d97706;">
+                <svg class="icon" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>
+              </div>
+              <div class="excel-stat-content">
+                <span class="excel-stat-title">Total Nota Penjualan</span>
+                <strong class="excel-stat-val" id="excelStatTrx">0 Nota</strong>
+              </div>
+            </div>
+
+            <div class="excel-stat-card">
+              <div class="excel-stat-icon" style="background: rgba(139, 92, 246, 0.12); color: #7c3aed;">
+                <svg class="icon" viewBox="0 0 24 24"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg>
+              </div>
+              <div class="excel-stat-content">
+                <span class="excel-stat-title">Pelanggan Unik</span>
+                <strong class="excel-stat-val" id="excelStatCust">0 Orang</strong>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- 4. CHECKLIST KOLOM DETAIL FILE EXCEL -->
+        <div class="excel-columns-box" style="margin-top: 1rem;">
+          <div style="font-size: 0.76rem; font-weight: 700; color: var(--slate-700); margin-bottom: 0.4rem; display: flex; align-items: center; gap: 0.35rem;">
+            <svg class="icon" style="width: 14px; height: 14px; color: #059669;" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"></polyline></svg>
+            Kolom Spreadsheet yang Akan Disertakan Otomatis:
+          </div>
+          <div class="excel-column-tags-wrap">
+            <span class="excel-col-tag">No. Invoice</span>
+            <span class="excel-col-tag">Tanggal & Waktu</span>
+            <span class="excel-col-tag tag-highlight">Nama Pembeli</span>
+            <span class="excel-col-tag tag-highlight">WhatsApp Pembeli</span>
+            <span class="excel-col-tag">Nama Kasir</span>
+            <span class="excel-col-tag">Metode Pembayaran</span>
+            <span class="excel-col-tag tag-highlight">Kode SKU ATK</span>
+            <span class="excel-col-tag tag-highlight">Nama Produk ATK</span>
+            <span class="excel-col-tag">Qty Beli</span>
+            <span class="excel-col-tag">Harga Satuan (Rp)</span>
+            <span class="excel-col-tag">Total Omset Item (Rp)</span>
+            <span class="excel-col-tag">Diskon Nota (Rp)</span>
+            <span class="excel-col-tag">Total Akhir Nota (Rp)</span>
+            <span class="excel-col-tag">Catatan Transaksi</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="modal-footer excel-modal-footer">
+        <div class="excel-footer-info">
+          <svg class="icon" style="width: 16px; height: 16px; color: #059669;" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="16" x2="12" y2="12"></line><line x1="12" y1="8" x2="12.01" y2="8"></line></svg>
+          <span>Format: <strong>Microsoft Excel (.xlsx)</strong> &bull; Auto Column Width</span>
+        </div>
+        <div style="display: flex; gap: 0.65rem; align-items: center;">
+          <button type="button" class="btn-cancel" onclick="closeExcelExportModal()">Batal</button>
+          <button type="button" class="btn-download-excel" id="btnDownloadExcelSubmit" onclick="executeExcelDownload()">
+            <svg class="icon" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
+            <span id="btnDownloadExcelLabel">Unduh File Excel (.xlsx)</span>
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
   <!-- SCRIPT LOGIKA APLIKASI -->
-  <script src="js/app.js?v=2.3"></script>
+  <script src="js/app.js?v=2.4"></script>
   <script>
     // Inisialisasi modal konfigurasi endpoint API
     document.addEventListener('DOMContentLoaded', function() {

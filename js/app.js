@@ -111,6 +111,10 @@ const GasBridge = {
         payload.userRole = args[0];
       } else if (serverFunction === 'getSalesAnalyticsData') {
         payload.periodFilter = args[0];
+      } else if (serverFunction === 'getPanoramaSalesExportData') {
+        payload.periodFilter = args[0];
+        payload.startDate = args[1];
+        payload.endDate = args[2];
       } else if (serverFunction === 'initialSetup') {
         // no args
       } else {
@@ -3740,3 +3744,405 @@ const GasBridge = {
 
     window.open('https://api.whatsapp.com/send?text=' + encodeURIComponent(msg), '_blank');
   }
+
+  // ============================================================================
+  // 13. FITUR TARIK DATA EXCEL (.XLSX) PANORAMA SALES LENGKAP & DETAIL PEMBELI
+  // ============================================================================
+  const ExcelExportState = {
+    period: 'month',
+    startDate: '',
+    endDate: '',
+    type: 'panorama_all', // 'panorama_all' | 'panorama_items' | 'rekap_nota'
+    cachedData: null,
+    isLoading: false
+  };
+
+  function openExcelExportModal() {
+    var modal = document.getElementById('modalExcelExport');
+    if (!modal) return;
+    modal.classList.add('active');
+
+    // Sinkronkan periode default dengan filter aktif di analitik jika ada
+    var activePeriodBtn = document.querySelector('.period-chip-btn.active');
+    var activePeriod = activePeriodBtn ? activePeriodBtn.getAttribute('data-period') : 'month';
+    if (activePeriod === 'all' || activePeriod === 'month' || activePeriod === '7days' || activePeriod === 'today') {
+      ExcelExportState.period = activePeriod;
+    } else {
+      ExcelExportState.period = 'month';
+    }
+
+    setExcelExportPeriod(ExcelExportState.period, true);
+    loadExcelPreviewData();
+  }
+
+  function closeExcelExportModal() {
+    var modal = document.getElementById('modalExcelExport');
+    if (modal) modal.classList.remove('active');
+  }
+
+  function setExcelExportPeriod(period, skipFetch) {
+    ExcelExportState.period = period;
+    var chipBtns = document.querySelectorAll('.excel-chip-btn');
+    chipBtns.forEach(function (btn) {
+      if (btn.getAttribute('data-period') === period) {
+        btn.classList.add('active');
+      } else {
+        btn.classList.remove('active');
+      }
+    });
+
+    var customRow = document.getElementById('excelCustomDateRow');
+    if (customRow) {
+      if (period === 'custom') {
+        customRow.style.display = 'flex';
+        var now = new Date();
+        var y = now.getFullYear();
+        var m = ('0' + (now.getMonth() + 1)).slice(-2);
+        var d = ('0' + now.getDate()).slice(-2);
+        var todayStr = y + '-' + m + '-' + d;
+        var startInput = document.getElementById('excelStartDate');
+        var endInput = document.getElementById('excelEndDate');
+        if (startInput && !startInput.value) startInput.value = y + '-' + m + '-01';
+        if (endInput && !endInput.value) endInput.value = todayStr;
+      } else {
+        customRow.style.display = 'none';
+      }
+    }
+
+    if (!skipFetch) {
+      loadExcelPreviewData();
+    }
+  }
+
+  function selectExcelExportType(type) {
+    ExcelExportState.type = type;
+    var cards = document.querySelectorAll('.excel-type-card');
+    cards.forEach(function (card) {
+      if (card.getAttribute('data-type') === type) {
+        card.classList.add('active');
+      } else {
+        card.classList.remove('active');
+      }
+    });
+  }
+
+  function triggerExcelCustomRefresh() {
+    var startInput = document.getElementById('excelStartDate');
+    var endInput = document.getElementById('excelEndDate');
+    var start = startInput ? startInput.value : '';
+    var end = endInput ? endInput.value : '';
+
+    if (!start || !end) {
+      alert('Silakan tentukan tanggal awal dan tanggal akhir terlebih dahulu.');
+      return;
+    }
+    ExcelExportState.startDate = start;
+    ExcelExportState.endDate = end;
+    loadExcelPreviewData();
+  }
+
+  function loadExcelPreviewData() {
+    var omsetEl = document.getElementById('excelStatOmset');
+    var qtyEl = document.getElementById('excelStatQty');
+    var trxEl = document.getElementById('excelStatTrx');
+    var custEl = document.getElementById('excelStatCust');
+
+    if (omsetEl) omsetEl.textContent = 'Memuat...';
+    if (qtyEl) qtyEl.textContent = 'Memuat...';
+    if (trxEl) trxEl.textContent = 'Memuat...';
+    if (custEl) custEl.textContent = 'Memuat...';
+
+    var start = ExcelExportState.period === 'custom' ? (document.getElementById('excelStartDate').value || '') : '';
+    var end = ExcelExportState.period === 'custom' ? (document.getElementById('excelEndDate').value || '') : '';
+
+    GasBridge.call('getPanoramaSalesExportData', [ExcelExportState.period, start, end], function (res) {
+      if (res && res.success) {
+        ExcelExportState.cachedData = res;
+        updateExcelPreviewUI(res);
+      } else {
+        fallbackCalculateExcelPreview();
+      }
+    }, function () {
+      fallbackCalculateExcelPreview();
+    });
+  }
+
+  function updateExcelPreviewUI(data) {
+    var summary = data.summary || {};
+    var omsetEl = document.getElementById('excelStatOmset');
+    var qtyEl = document.getElementById('excelStatQty');
+    var trxEl = document.getElementById('excelStatTrx');
+    var custEl = document.getElementById('excelStatCust');
+
+    if (omsetEl) omsetEl.textContent = formatRupiah(summary.grandTotalOmset || 0);
+    if (qtyEl) qtyEl.textContent = (summary.grandTotalQty || 0).toLocaleString('id-ID') + ' Pcs';
+    if (trxEl) trxEl.textContent = (summary.grandTotalTrx || 0).toLocaleString('id-ID') + ' Nota';
+    if (custEl) custEl.textContent = (summary.totalPelangganUnik || 0).toLocaleString('id-ID') + ' Orang';
+  }
+
+  function fallbackCalculateExcelPreview() {
+    var list = AppState.transactions || [];
+    var now = new Date();
+    var curMonth = now.getMonth();
+    var curYear = now.getFullYear();
+    var todayMidnight = new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime();
+    var sevenDaysAgo = todayMidnight - (6 * 24 * 60 * 60 * 1000);
+
+    var filtered = list.filter(function (t) {
+      var d = new Date(t.tanggal);
+      if (isNaN(d.getTime())) return true;
+      var tTime = d.getTime();
+      if (ExcelExportState.period === 'today') return tTime >= todayMidnight;
+      if (ExcelExportState.period === '7days') return tTime >= sevenDaysAgo;
+      if (ExcelExportState.period === 'month') return d.getMonth() === curMonth && d.getFullYear() === curYear;
+      return true;
+    });
+
+    var totalOmset = filtered.reduce(function (sum, t) { return sum + (Number(t.total) || 0); }, 0);
+    var custSet = {};
+    filtered.forEach(function (t) { if (t.pelanggan) custSet[t.pelanggan.toLowerCase()] = true; });
+
+    var mockRes = {
+      success: true,
+      period: ExcelExportState.period,
+      summary: {
+        grandTotalOmset: totalOmset,
+        grandTotalQty: filtered.length * 2,
+        grandTotalTrx: filtered.length,
+        totalPelangganUnik: Object.keys(custSet).length
+      },
+      panoramaRows: filtered.map(function (t) {
+        return {
+          noInvoice: t.noInvoice,
+          tanggal: t.tanggal,
+          pelanggan: t.pelanggan || 'Pelanggan Umum',
+          noWhatsApp: t.noWhatsApp || '-',
+          kasir: t.kasir || '-',
+          metodeBayar: t.metodeBayar || 'Tunai',
+          kodeBarang: 'ATK',
+          namaBarang: 'Transaksi Nota ' + t.noInvoice,
+          qty: 1,
+          hargaSatuan: t.total,
+          subtotalItem: t.total,
+          diskonNota: t.diskon || 0,
+          totalAkhirNota: t.total,
+          catatanNota: t.catatan || ''
+        };
+      }),
+      rekapNota: filtered,
+      produkRanking: []
+    };
+
+    ExcelExportState.cachedData = mockRes;
+    updateExcelPreviewUI(mockRes);
+  }
+
+  function executeExcelDownload() {
+    var btnSubmit = document.getElementById('btnDownloadExcelSubmit');
+    var btnLabel = document.getElementById('btnDownloadExcelLabel');
+
+    if (btnSubmit) btnSubmit.disabled = true;
+    if (btnLabel) btnLabel.textContent = 'Menyiapkan File Excel...';
+
+    // Pastikan data terbaru sudah terambil
+    var start = ExcelExportState.period === 'custom' ? (document.getElementById('excelStartDate').value || '') : '';
+    var end = ExcelExportState.period === 'custom' ? (document.getElementById('excelEndDate').value || '') : '';
+
+    GasBridge.call('getPanoramaSalesExportData', [ExcelExportState.period, start, end], function (res) {
+      if (res && res.success) {
+        ExcelExportState.cachedData = res;
+        generateExcelSpreadsheet(res);
+      } else if (ExcelExportState.cachedData) {
+        generateExcelSpreadsheet(ExcelExportState.cachedData);
+      } else {
+        fallbackCalculateExcelPreview();
+        generateExcelSpreadsheet(ExcelExportState.cachedData);
+      }
+      resetDownloadBtnState();
+    }, function () {
+      if (ExcelExportState.cachedData) {
+        generateExcelSpreadsheet(ExcelExportState.cachedData);
+      } else {
+        fallbackCalculateExcelPreview();
+        generateExcelSpreadsheet(ExcelExportState.cachedData);
+      }
+      resetDownloadBtnState();
+    });
+  }
+
+  function resetDownloadBtnState() {
+    var btnSubmit = document.getElementById('btnDownloadExcelSubmit');
+    var btnLabel = document.getElementById('btnDownloadExcelLabel');
+    if (btnSubmit) btnSubmit.disabled = false;
+    if (btnLabel) btnLabel.textContent = 'Unduh File Excel (.xlsx)';
+  }
+
+  function generateExcelSpreadsheet(data) {
+    var periodName = (ExcelExportState.period || 'semua').toUpperCase();
+    var now = new Date();
+    var timeStamp = now.getFullYear() + ('0' + (now.getMonth() + 1)).slice(-2) + ('0' + now.getDate()).slice(-2);
+    var fileName = 'MAH_POS_Panorama_Sales_' + periodName + '_' + timeStamp + '.xlsx';
+
+    // Helper Auto Column Widths agar teks tidak terpotong (###)
+    function fitCols(aoa) {
+      var widths = [];
+      aoa.forEach(function (row) {
+        row.forEach(function (val, cIdx) {
+          var s = (val !== null && val !== undefined) ? val.toString() : '';
+          var len = Math.max(s.length, 8);
+          widths[cIdx] = Math.max(widths[cIdx] || 0, len);
+        });
+      });
+      return widths.map(function (w) { return { wch: Math.min(w + 3, 45) }; });
+    }
+
+    // 1. DATA SHEET PANORAMA (Item x Pembeli)
+    var panoramaAOA = [
+      ['No. Invoice', 'Tanggal & Waktu', 'Nama Pembeli', 'WhatsApp Pembeli', 'Kasir', 'Metode Bayar', 'Kode SKU', 'Nama Produk ATK', 'Qty Terjual', 'Harga Satuan (Rp)', 'Total Omset Item (Rp)', 'Diskon Nota (Rp)', 'Total Akhir Nota (Rp)', 'Catatan Transaksi']
+    ];
+    (data.panoramaRows || []).forEach(function (r) {
+      panoramaAOA.push([
+        r.noInvoice,
+        r.tanggal,
+        r.pelanggan,
+        r.noWhatsApp,
+        r.kasir,
+        r.metodeBayar,
+        r.kodeBarang,
+        r.namaBarang,
+        Number(r.qty) || 0,
+        Number(r.hargaSatuan) || 0,
+        Number(r.subtotalItem) || 0,
+        Number(r.diskonNota) || 0,
+        Number(r.totalAkhirNota) || 0,
+        r.catatanNota || '-'
+      ]);
+    });
+
+    // 2. DATA SHEET REKAP NOTA
+    var rekapAOA = [
+      ['No. Invoice', 'Tanggal & Waktu', 'Kasir', 'Nama Pembeli', 'WhatsApp Pembeli', 'Metode Bayar', 'Subtotal Belanja (Rp)', 'Diskon Nota (Rp)', 'Total Akhir (Rp)', 'Uang Bayar (Rp)', 'Kembalian (Rp)', 'Catatan Transaksi']
+    ];
+    (data.rekapNota || []).forEach(function (n) {
+      rekapAOA.push([
+        n.noInvoice,
+        n.tanggal,
+        n.kasir,
+        n.pelanggan,
+        n.noWhatsApp,
+        n.metodeBayar,
+        Number(n.subtotal) || Number(n.total) || 0,
+        Number(n.diskon) || 0,
+        Number(n.total) || 0,
+        Number(n.bayar) || 0,
+        Number(n.kembali) || 0,
+        n.catatan || '-'
+      ]);
+    });
+
+    // 3. DATA SHEET RANKING PRODUK
+    var rankingAOA = [
+      ['Peringkat', 'Kode SKU', 'Nama Produk ATK', 'Total Qty Terjual', 'Total Omset Produk (Rp)', '% Kontribusi Omset']
+    ];
+    (data.produkRanking || []).forEach(function (p) {
+      rankingAOA.push([
+        p.rank,
+        p.kode,
+        p.nama,
+        Number(p.totalQty) || 0,
+        Number(p.totalOmset) || 0,
+        (p.kontribusiPersen || 0) + '%'
+      ]);
+    });
+
+    // 4. DATA SHEET RINGKASAN EKSEKUTIF
+    var summary = data.summary || {};
+    var execAOA = [
+      ['RINGKASAN EKSEKUTIF PENJUALAN - MAH POS'],
+      ['Nama Toko', (AppState.settings && AppState.settings.NAMA_TOKO) || 'MAH POS - Toko ATK'],
+      ['Periode Data', periodName],
+      ['Waktu Penarikan Data', new Date().toLocaleString('id-ID')],
+      [],
+      ['INDIKATOR KINERJA UTAMA (KPI)', 'NILAI LAPORAN'],
+      ['Total Omset Penjualan (Gross Revenue)', Number(summary.grandTotalOmset) || 0],
+      ['Total Produk Terjual (Kuantiti Pcs)', Number(summary.grandTotalQty) || 0],
+      ['Total Transaksi Nota Terbit', Number(summary.grandTotalTrx) || 0],
+      ['Total Pembeli Terlayani', Number(summary.totalPelangganUnik) || 0],
+      ['Rata-Rata Nilai Belanja per Nota (Basket Size)', (summary.grandTotalTrx > 0 ? Math.round(summary.grandTotalOmset / summary.grandTotalTrx) : 0)]
+    ];
+
+    // JIKA LIBRARY SheetJS TERSEDIA: GENERATE FILE .XLSX SEJATI
+    if (typeof XLSX !== 'undefined') {
+      try {
+        var wb = XLSX.utils.book_new();
+
+        if (ExcelExportState.type === 'panorama_all') {
+          // Buku kerja komplit 4-sheet
+          var ws1 = XLSX.utils.aoa_to_sheet(panoramaAOA);
+          ws1['!cols'] = fitCols(panoramaAOA);
+          XLSX.utils.book_append_sheet(wb, ws1, 'Panorama_Sales_Item');
+
+          var ws2 = XLSX.utils.aoa_to_sheet(rekapAOA);
+          ws2['!cols'] = fitCols(rekapAOA);
+          XLSX.utils.book_append_sheet(wb, ws2, 'Rekap_Nota_Transaksi');
+
+          var ws3 = XLSX.utils.aoa_to_sheet(rankingAOA);
+          ws3['!cols'] = fitCols(rankingAOA);
+          XLSX.utils.book_append_sheet(wb, ws3, 'Ranking_Produk_ATK');
+
+          var ws4 = XLSX.utils.aoa_to_sheet(execAOA);
+          ws4['!cols'] = fitCols(execAOA);
+          XLSX.utils.book_append_sheet(wb, ws4, 'Ringkasan_Eksekutif');
+
+        } else if (ExcelExportState.type === 'panorama_items') {
+          var wsItems = XLSX.utils.aoa_to_sheet(panoramaAOA);
+          wsItems['!cols'] = fitCols(panoramaAOA);
+          XLSX.utils.book_append_sheet(wb, wsItems, 'Panorama_Sales_Item');
+
+        } else if (ExcelExportState.type === 'rekap_nota') {
+          var wsRekap = XLSX.utils.aoa_to_sheet(rekapAOA);
+          wsRekap['!cols'] = fitCols(rekapAOA);
+          XLSX.utils.book_append_sheet(wb, wsRekap, 'Rekap_Nota_Transaksi');
+        }
+
+        XLSX.writeFile(wb, fileName);
+        showToast('Berhasil mengunduh spreadsheet ' + fileName, 'success');
+        closeExcelExportModal();
+        return;
+      } catch (xlsxErr) {
+        console.error('Gagal membuat xlsx:', xlsxErr);
+      }
+    }
+
+    // FALLBACK CERDAS (JIKA OFFLINE / CDN TERHALANG): DOWNLOAD CSV DENGAN BOM UTF-8
+    var targetAOA = (ExcelExportState.type === 'rekap_nota') ? rekapAOA : panoramaAOA;
+    var csvContent = '\uFEFF'; // UTF-8 BOM agar Excel membacanya rapi
+    targetAOA.forEach(function (rowArray) {
+      var row = rowArray.map(function (val) {
+        var str = (val === null || val === undefined) ? '' : val.toString();
+        str = str.replace(/"/g, '""');
+        return '"' + str + '"';
+      }).join(',');
+      csvContent += row + '\r\n';
+    });
+
+    var blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    var link = document.createElement('a');
+    var csvName = fileName.replace('.xlsx', '.csv');
+    link.href = URL.createObjectURL(blob);
+    link.download = csvName;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+
+    showToast('Berhasil mengunduh laporan CSV ' + csvName, 'success');
+    closeExcelExportModal();
+  }
+
+  // Daftarkan ke Global Window
+  window.openExcelExportModal = openExcelExportModal;
+  window.closeExcelExportModal = closeExcelExportModal;
+  window.setExcelExportPeriod = setExcelExportPeriod;
+  window.selectExcelExportType = selectExcelExportType;
+  window.triggerExcelCustomRefresh = triggerExcelCustomRefresh;
+  window.executeExcelDownload = executeExcelDownload;

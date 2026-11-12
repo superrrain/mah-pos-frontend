@@ -3144,7 +3144,371 @@ h1, h2, h3, h4, h5, h6,
 .card-step-val,
 .qty-input,
 .table td.numeric,
-.badge-mono {
+.badge-mono,
+.excel-stat-val {
   font-family: var(--font-mono) !important;
   font-variant-numeric: tabular-nums !important;
+}
+
+/* ==========================================================================
+   FITUR TARIK DATA EXCEL (.XLSX) PANORAMA SALES - STYLING PREMIUM
+   ========================================================================== */
+.btn-excel-export {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  padding: 0.45rem 0.95rem;
+  background: linear-gradient(135deg, #107c41 0%, #0d6535 100%);
+  color: var(--white);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: var(--radius-md);
+  font-family: var(--font-heading);
+  font-size: 0.82rem;
+  font-weight: 700;
+  cursor: pointer;
+  box-shadow: 0 2px 8px rgba(16, 124, 65, 0.22);
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  white-space: nowrap;
+}
+
+.btn-excel-export:hover {
+  background: linear-gradient(135deg, #059669 0%, #107c41 100%);
+  box-shadow: 0 4px 14px rgba(16, 124, 65, 0.35);
+  transform: translateY(-1px);
+}
+
+.btn-excel-export:active {
+  transform: translateY(0);
+}
+
+.btn-excel-export .icon-excel {
+  width: 17px;
+  height: 17px;
+  stroke: #ffffff;
+  stroke-width: 2.2;
+}
+
+/* Modal Styling */
+.excel-export-modal-card {
+  max-width: 720px;
+  width: 95%;
+  border-radius: var(--radius-xl);
+  overflow: hidden;
+  box-shadow: 0 20px 45px rgba(15, 23, 42, 0.25);
+}
+
+.excel-modal-header {
+  background: #f0fdf4;
+  border-bottom: 1.5px solid #dcfce7;
+  padding: 1rem 1.35rem;
+}
+
+.excel-header-badge {
+  width: 44px;
+  height: 44px;
+  min-width: 44px;
+  border-radius: 12px;
+  background: linear-gradient(135deg, #107c41 0%, #059669 100%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 4px 10px rgba(16, 124, 65, 0.25);
+}
+
+.icon-excel-header {
+  width: 24px;
+  height: 24px;
+  stroke: #ffffff;
+  stroke-width: 2.2;
+  fill: none;
+}
+
+.excel-modal-body {
+  padding: 1.25rem 1.4rem;
+  max-height: 76vh;
+  overflow-y: auto;
+}
+
+.excel-section-group {
+  margin-bottom: 0.85rem;
+}
+
+.excel-section-label {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-family: var(--font-heading);
+  font-size: 0.88rem;
+  font-weight: 800;
+  color: var(--slate-900);
+  margin-bottom: 0.55rem;
+}
+
+.excel-section-label .icon {
+  width: 16px;
+  height: 16px;
+  color: #107c41;
+}
+
+/* Chips Periode */
+.excel-period-chips-grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.45rem;
+}
+
+.excel-chip-btn {
+  padding: 0.4rem 0.8rem;
+  border-radius: var(--radius-full);
+  border: 1.5px solid var(--slate-200);
+  background: var(--white);
+  color: var(--slate-700);
+  font-family: var(--font-heading);
+  font-size: 0.78rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.18s ease;
+}
+
+.excel-chip-btn:hover {
+  border-color: #107c41;
+  color: #107c41;
+  background: #f0fdf4;
+}
+
+.excel-chip-btn.active {
+  background: #107c41;
+  border-color: #107c41;
+  color: var(--white);
+  box-shadow: 0 2px 6px rgba(16, 124, 65, 0.25);
+}
+
+/* Visual Selector Cards */
+.excel-type-cards-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 0.65rem;
+}
+
+.excel-type-card {
+  border: 1.5px solid var(--slate-200);
+  background: var(--white);
+  border-radius: var(--radius-lg);
+  padding: 0.8rem 1rem;
+  cursor: pointer;
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  position: relative;
+}
+
+.excel-type-card:hover {
+  border-color: #059669;
+  background: #f8fafc;
+  transform: translateY(-1px);
+}
+
+.excel-type-card.active {
+  border-color: #107c41;
+  background: #f0fdf4;
+  box-shadow: 0 4px 12px rgba(16, 124, 65, 0.12);
+}
+
+.excel-type-card-badge {
+  position: absolute;
+  top: 0.75rem;
+  right: 1rem;
+  background: #059669;
+  color: var(--white);
+  font-size: 0.66rem;
+  font-weight: 800;
+  font-family: var(--font-heading);
+  padding: 2px 8px;
+  border-radius: var(--radius-full);
+  letter-spacing: 0.3px;
+}
+
+.excel-type-card-title {
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+  font-family: var(--font-heading);
+  font-size: 0.95rem;
+  font-weight: 800;
+  color: var(--slate-900);
+  margin-bottom: 0.25rem;
+}
+
+.icon-excel-sm {
+  width: 17px;
+  height: 17px;
+  color: #107c41;
+}
+
+.excel-type-card-desc {
+  font-size: 0.77rem;
+  color: var(--slate-600);
+  line-height: 1.45;
+}
+
+/* Stats Preview Grid */
+.excel-stats-preview-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 0.65rem;
+}
+
+.excel-stat-card {
+  background: var(--white);
+  border: 1.5px solid var(--slate-200);
+  border-radius: var(--radius-md);
+  padding: 0.65rem 0.75rem;
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+}
+
+.excel-stat-icon {
+  width: 34px;
+  height: 34px;
+  min-width: 34px;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.excel-stat-icon .icon {
+  width: 18px;
+  height: 18px;
+}
+
+.excel-stat-content {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.excel-stat-title {
+  font-size: 0.68rem;
+  font-weight: 700;
+  color: var(--slate-500);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.excel-stat-val {
+  font-size: 0.95rem;
+  font-weight: 800;
+  color: var(--slate-900);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* Column Tags Preview */
+.excel-columns-box {
+  background: var(--slate-50);
+  border: 1px solid var(--slate-200);
+  border-radius: var(--radius-md);
+  padding: 0.65rem 0.85rem;
+}
+
+.excel-column-tags-wrap {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+}
+
+.excel-col-tag {
+  background: var(--white);
+  border: 1px solid var(--slate-200);
+  color: var(--slate-700);
+  font-size: 0.7rem;
+  font-weight: 600;
+  padding: 2px 7px;
+  border-radius: 4px;
+}
+
+.excel-col-tag.tag-highlight {
+  background: #ecfdf5;
+  border-color: #a7f3d0;
+  color: #065f46;
+  font-weight: 700;
+}
+
+/* Modal Footer */
+.excel-modal-footer {
+  background: var(--slate-50);
+  border-top: 1.5px solid var(--slate-200);
+  padding: 0.85rem 1.4rem;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+}
+
+.excel-footer-info {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-size: 0.76rem;
+  color: var(--slate-600);
+}
+
+.btn-download-excel {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.65rem 1.35rem;
+  background: linear-gradient(135deg, #107c41 0%, #059669 100%);
+  color: var(--white);
+  border: none;
+  border-radius: var(--radius-md);
+  font-family: var(--font-heading);
+  font-size: 0.9rem;
+  font-weight: 800;
+  cursor: pointer;
+  box-shadow: 0 4px 14px rgba(16, 124, 65, 0.3);
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.btn-download-excel:hover {
+  background: linear-gradient(135deg, #059669 0%, #047857 100%);
+  transform: translateY(-1px);
+  box-shadow: 0 6px 18px rgba(16, 124, 65, 0.4);
+}
+
+.btn-download-excel:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  transform: none;
+}
+
+.btn-download-excel .icon {
+  width: 18px;
+  height: 18px;
+  stroke-width: 2.3;
+}
+
+@media (max-width: 767px) {
+  .excel-stats-preview-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+  .excel-modal-footer {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  .excel-modal-footer > div:last-child {
+    flex-direction: column;
+  }
+  .btn-download-excel {
+    width: 100%;
+    justify-content: center;
+  }
+  .excel-type-card-badge {
+    position: static;
+    display: inline-block;
+    margin-bottom: 4px;
+  }
 }
