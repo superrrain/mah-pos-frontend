@@ -1288,11 +1288,45 @@
           </div>
         </div>
 
-        <!-- 2. PILIHAN JENIS FILE & STRUKTUR EXCEL -->
+        <!-- 2. PILIHAN FORMAT FILE: EXCEL TERFORMAT MEWAH (.XLS) VS STANDAR (.XLSX) -->
         <div class="excel-section-group" style="margin-top: 1rem;">
           <label class="excel-section-label">
             <svg class="icon" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="8" y1="13" x2="16" y2="13"></line><line x1="8" y1="17" x2="16" y2="17"></line></svg>
-            2. Pilih Format & Isi Laporan Excel
+            2. Pilih Format Tampilan File Excel
+          </label>
+          <div class="excel-format-toggle-grid">
+            <div class="excel-format-card active" id="cardFormatXls" onclick="setExcelFileFormat('xls')">
+              <div class="excel-format-radio-indicator"></div>
+              <div class="excel-format-content">
+                <div class="excel-format-title">
+                  <strong>Excel Terformat Mewah (.xls)</strong>
+                  <span class="badge-rec">Tampilan Terbaik</span>
+                </div>
+                <div class="excel-format-desc">
+                  Header hijau zamrud, garis border rapi di setiap sel, zebra striping selang-seling, format Rupiah murni, dan multi-sheet. Sangat rapi dibuka di Microsoft Excel & WPS!
+                </div>
+              </div>
+            </div>
+
+            <div class="excel-format-card" id="cardFormatXlsx" onclick="setExcelFileFormat('xlsx')">
+              <div class="excel-format-radio-indicator"></div>
+              <div class="excel-format-content">
+                <div class="excel-format-title">
+                  <strong>Excel Standar (.xlsx)</strong>
+                </div>
+                <div class="excel-format-desc">
+                  Format OpenXML standar untuk spreadsheet Microsoft Office modern.
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- 3. PILIHAN JENIS FILE & STRUKTUR EXCEL -->
+        <div class="excel-section-group" style="margin-top: 1rem;">
+          <label class="excel-section-label">
+            <svg class="icon" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="8" y1="13" x2="16" y2="13"></line><line x1="8" y1="17" x2="16" y2="17"></line></svg>
+            3. Pilih Struktur & Isi Laporan Excel
           </label>
           <div class="excel-type-cards-grid">
             <!-- Card 1: Multi-Sheet Workbook -->
@@ -1332,11 +1366,11 @@
           </div>
         </div>
 
-        <!-- 3. LIVE ESTIMASI DATA YANG AKAN DITARIK -->
+        <!-- 4. LIVE ESTIMASI DATA YANG AKAN DITARIK -->
         <div class="excel-section-group" style="margin-top: 1rem;">
           <label class="excel-section-label">
             <svg class="icon" viewBox="0 0 24 24"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"></polyline></svg>
-            3. Estimasi Data Terdeteksi untuk Ditarik
+            4. Estimasi Data Terdeteksi untuk Ditarik
           </label>
           <div class="excel-stats-preview-grid">
             <div class="excel-stat-card">

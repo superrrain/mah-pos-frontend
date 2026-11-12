@@ -3746,16 +3746,34 @@ const GasBridge = {
   }
 
   // ============================================================================
-  // 13. FITUR TARIK DATA EXCEL (.XLSX) PANORAMA SALES LENGKAP & DETAIL PEMBELI
+  // 13. FITUR TARIK DATA EXCEL (.XLS & .XLSX) PANORAMA SALES LENGKAP & DETAIL PEMBELI
   // ============================================================================
   const ExcelExportState = {
     period: 'month',
     startDate: '',
     endDate: '',
     type: 'panorama_all', // 'panorama_all' | 'panorama_items' | 'rekap_nota'
+    format: 'xls',        // 'xls' (Terformat Mewah) atau 'xlsx' (Standar)
     cachedData: null,
     isLoading: false
   };
+
+  function setExcelFileFormat(fmt) {
+    ExcelExportState.format = fmt;
+    var cardXls = document.getElementById('cardFormatXls');
+    var cardXlsx = document.getElementById('cardFormatXlsx');
+    var btnLabel = document.getElementById('btnDownloadExcelLabel');
+
+    if (fmt === 'xls') {
+      if (cardXls) cardXls.classList.add('active');
+      if (cardXlsx) cardXlsx.classList.remove('active');
+      if (btnLabel) btnLabel.textContent = 'Unduh File Excel Terformat (.xls)';
+    } else {
+      if (cardXlsx) cardXlsx.classList.add('active');
+      if (cardXls) cardXls.classList.remove('active');
+      if (btnLabel) btnLabel.textContent = 'Unduh File Excel Standar (.xlsx)';
+    }
+  }
 
   function openExcelExportModal() {
     var modal = document.getElementById('modalExcelExport');
@@ -3771,6 +3789,7 @@ const GasBridge = {
       ExcelExportState.period = 'month';
     }
 
+    setExcelFileFormat('xls');
     setExcelExportPeriod(ExcelExportState.period, true);
     loadExcelPreviewData();
   }
@@ -3981,7 +4000,16 @@ const GasBridge = {
     var periodName = (ExcelExportState.period || 'semua').toUpperCase();
     var now = new Date();
     var timeStamp = now.getFullYear() + ('0' + (now.getMonth() + 1)).slice(-2) + ('0' + now.getDate()).slice(-2);
-    var fileName = 'MAH_POS_Panorama_Sales_' + periodName + '_' + timeStamp + '.xlsx';
+    var baseName = 'MAH_POS_Panorama_Sales_' + periodName + '_' + timeStamp;
+
+    // JIKA MEMILIH FORMAT TERFORMAT MEWAH (.XLS) -> MENGGUNAKAN XML SPREADSHEET (TAMPILAN TERBAIK)
+    if (ExcelExportState.format === 'xls') {
+      generateExcelXmlSpreadsheet(data, baseName + '.xls');
+      return;
+    }
+
+    // JIKA MEMILIH FORMAT STANDAR (.XLSX)
+    var fileName = baseName + '.xlsx';
 
     // Helper Auto Column Widths agar teks tidak terpotong (###)
     function fitCols(aoa) {
@@ -3996,7 +4024,6 @@ const GasBridge = {
       return widths.map(function (w) { return { wch: Math.min(w + 3, 45) }; });
     }
 
-    // 1. DATA SHEET PANORAMA (Item x Pembeli)
     var panoramaAOA = [
       ['No. Invoice', 'Tanggal & Waktu', 'Nama Pembeli', 'WhatsApp Pembeli', 'Kasir', 'Metode Bayar', 'Kode SKU', 'Nama Produk ATK', 'Qty Terjual', 'Harga Satuan (Rp)', 'Total Omset Item (Rp)', 'Diskon Nota (Rp)', 'Total Akhir Nota (Rp)', 'Catatan Transaksi']
     ];
@@ -4019,7 +4046,6 @@ const GasBridge = {
       ]);
     });
 
-    // 2. DATA SHEET REKAP NOTA
     var rekapAOA = [
       ['No. Invoice', 'Tanggal & Waktu', 'Kasir', 'Nama Pembeli', 'WhatsApp Pembeli', 'Metode Bayar', 'Subtotal Belanja (Rp)', 'Diskon Nota (Rp)', 'Total Akhir (Rp)', 'Uang Bayar (Rp)', 'Kembalian (Rp)', 'Catatan Transaksi']
     ];
@@ -4040,7 +4066,6 @@ const GasBridge = {
       ]);
     });
 
-    // 3. DATA SHEET RANKING PRODUK
     var rankingAOA = [
       ['Peringkat', 'Kode SKU', 'Nama Produk ATK', 'Total Qty Terjual', 'Total Omset Produk (Rp)', '% Kontribusi Omset']
     ];
@@ -4055,7 +4080,6 @@ const GasBridge = {
       ]);
     });
 
-    // 4. DATA SHEET RINGKASAN EKSEKUTIF
     var summary = data.summary || {};
     var execAOA = [
       ['RINGKASAN EKSEKUTIF PENJUALAN - MAH POS'],
@@ -4071,13 +4095,11 @@ const GasBridge = {
       ['Rata-Rata Nilai Belanja per Nota (Basket Size)', (summary.grandTotalTrx > 0 ? Math.round(summary.grandTotalOmset / summary.grandTotalTrx) : 0)]
     ];
 
-    // JIKA LIBRARY SheetJS TERSEDIA: GENERATE FILE .XLSX SEJATI
     if (typeof XLSX !== 'undefined') {
       try {
         var wb = XLSX.utils.book_new();
 
         if (ExcelExportState.type === 'panorama_all') {
-          // Buku kerja komplit 4-sheet
           var ws1 = XLSX.utils.aoa_to_sheet(panoramaAOA);
           ws1['!cols'] = fitCols(panoramaAOA);
           XLSX.utils.book_append_sheet(wb, ws1, 'Panorama_Sales_Item');
@@ -4110,32 +4132,436 @@ const GasBridge = {
         closeExcelExportModal();
         return;
       } catch (xlsxErr) {
-        console.error('Gagal membuat xlsx:', xlsxErr);
+        console.error('Gagal membuat xlsx via SheetJS, beralih ke generator terformat:', xlsxErr);
       }
     }
 
-    // FALLBACK CERDAS (JIKA OFFLINE / CDN TERHALANG): DOWNLOAD CSV DENGAN BOM UTF-8
-    var targetAOA = (ExcelExportState.type === 'rekap_nota') ? rekapAOA : panoramaAOA;
-    var csvContent = '\uFEFF'; // UTF-8 BOM agar Excel membacanya rapi
-    targetAOA.forEach(function (rowArray) {
-      var row = rowArray.map(function (val) {
-        var str = (val === null || val === undefined) ? '' : val.toString();
-        str = str.replace(/"/g, '""');
-        return '"' + str + '"';
-      }).join(',');
-      csvContent += row + '\r\n';
-    });
+    // Jika SheetJS tidak tersedia saat memilih XLSX, otomatis alihkan ke Excel Terformat (.xls)
+    generateExcelXmlSpreadsheet(data, baseName + '.xls');
+  }
 
-    var blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+  /**
+   * GENERATOR RESMI MICROSOFT EXCEL XML (SpreadsheetML) TERFORMAT MEWAH
+   * Menghasilkan file .xls yang 100% kompatibel dengan Microsoft Excel & WPS,
+   * dilengkapi header hijau zamrud, border rapi, zebra striping, dan multi-sheet!
+   */
+  function generateExcelXmlSpreadsheet(data, fileName) {
+    function escXml(str) {
+      if (str === null || str === undefined) return '';
+      return String(str)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&apos;');
+    }
+
+    var periodName = (ExcelExportState.period || 'semua').toUpperCase();
+    var summary = data.summary || {};
+    var nowIso = new Date().toISOString();
+
+    var xml = '<?xml version="1.0" encoding="UTF-8"?>\n'
+      + '<?mso-application progid="Excel.Sheet"?>\n'
+      + '<Workbook xmlns="urn:schemas-microsoft-com:office:spreadsheet"\n'
+      + ' xmlns:o="urn:schemas-microsoft-com:office:office"\n'
+      + ' xmlns:x="urn:schemas-microsoft-com:office:excel"\n'
+      + ' xmlns:ss="urn:schemas-microsoft-com:office:spreadsheet"\n'
+      + ' xmlns:html="http://www.w3.org/TR/REC-html40">\n'
+      + '  <DocumentProperties xmlns="urn:schemas-microsoft-com:office:office">\n'
+      + '    <Author>MAH POS</Author>\n'
+      + '    <Company>MAH POS - Toko ATK</Company>\n'
+      + '    <Created>' + nowIso + '</Created>\n'
+      + '  </DocumentProperties>\n'
+      + '  <Styles>\n'
+      + '    <Style ss:ID="Default" ss:Name="Normal">\n'
+      + '      <Alignment ss:Vertical="Center"/>\n'
+      + '      <Font ss:FontName="Segoe UI" ss:Size="10" ss:Color="#1E293B"/>\n'
+      + '    </Style>\n'
+      + '    <Style ss:ID="Header">\n'
+      + '      <Alignment ss:Horizontal="Center" ss:Vertical="Center" ss:WrapText="1"/>\n'
+      + '      <Borders>\n'
+      + '        <Border ss:Position="Bottom" ss:LineStyle="Continuous" ss:Weight="2" ss:Color="#0D6535"/>\n'
+      + '        <Border ss:Position="Left" ss:LineStyle="Continuous" ss:Weight="1" ss:Color="#0D6535"/>\n'
+      + '        <Border ss:Position="Right" ss:LineStyle="Continuous" ss:Weight="1" ss:Color="#0D6535"/>\n'
+      + '        <Border ss:Position="Top" ss:LineStyle="Continuous" ss:Weight="1" ss:Color="#0D6535"/>\n'
+      + '      </Borders>\n'
+      + '      <Font ss:FontName="Segoe UI" ss:Size="10" ss:Color="#FFFFFF" ss:Bold="1"/>\n'
+      + '      <Interior ss:Color="#107C41" ss:Pattern="Solid"/>\n'
+      + '    </Style>\n'
+      + '    <Style ss:ID="CellLeft">\n'
+      + '      <Alignment ss:Horizontal="Left" ss:Vertical="Center"/>\n'
+      + '      <Borders>\n'
+      + '        <Border ss:Position="Bottom" ss:LineStyle="Continuous" ss:Weight="1" ss:Color="#CBD5E1"/>\n'
+      + '        <Border ss:Position="Left" ss:LineStyle="Continuous" ss:Weight="1" ss:Color="#CBD5E1"/>\n'
+      + '        <Border ss:Position="Right" ss:LineStyle="Continuous" ss:Weight="1" ss:Color="#CBD5E1"/>\n'
+      + '        <Border ss:Position="Top" ss:LineStyle="Continuous" ss:Weight="1" ss:Color="#CBD5E1"/>\n'
+      + '      </Borders>\n'
+      + '      <Font ss:FontName="Segoe UI" ss:Size="10" ss:Color="#1E293B"/>\n'
+      + '    </Style>\n'
+      + '    <Style ss:ID="CellLeftZebra">\n'
+      + '      <Alignment ss:Horizontal="Left" ss:Vertical="Center"/>\n'
+      + '      <Borders>\n'
+      + '        <Border ss:Position="Bottom" ss:LineStyle="Continuous" ss:Weight="1" ss:Color="#CBD5E1"/>\n'
+      + '        <Border ss:Position="Left" ss:LineStyle="Continuous" ss:Weight="1" ss:Color="#CBD5E1"/>\n'
+      + '        <Border ss:Position="Right" ss:LineStyle="Continuous" ss:Weight="1" ss:Color="#CBD5E1"/>\n'
+      + '        <Border ss:Position="Top" ss:LineStyle="Continuous" ss:Weight="1" ss:Color="#CBD5E1"/>\n'
+      + '      </Borders>\n'
+      + '      <Font ss:FontName="Segoe UI" ss:Size="10" ss:Color="#1E293B"/>\n'
+      + '      <Interior ss:Color="#F8FAFC" ss:Pattern="Solid"/>\n'
+      + '    </Style>\n'
+      + '    <Style ss:ID="CellCenter">\n'
+      + '      <Alignment ss:Horizontal="Center" ss:Vertical="Center"/>\n'
+      + '      <Borders>\n'
+      + '        <Border ss:Position="Bottom" ss:LineStyle="Continuous" ss:Weight="1" ss:Color="#CBD5E1"/>\n'
+      + '        <Border ss:Position="Left" ss:LineStyle="Continuous" ss:Weight="1" ss:Color="#CBD5E1"/>\n'
+      + '        <Border ss:Position="Right" ss:LineStyle="Continuous" ss:Weight="1" ss:Color="#CBD5E1"/>\n'
+      + '        <Border ss:Position="Top" ss:LineStyle="Continuous" ss:Weight="1" ss:Color="#CBD5E1"/>\n'
+      + '      </Borders>\n'
+      + '      <Font ss:FontName="Segoe UI" ss:Size="10" ss:Color="#1E293B"/>\n'
+      + '    </Style>\n'
+      + '    <Style ss:ID="CellCenterZebra">\n'
+      + '      <Alignment ss:Horizontal="Center" ss:Vertical="Center"/>\n'
+      + '      <Borders>\n'
+      + '        <Border ss:Position="Bottom" ss:LineStyle="Continuous" ss:Weight="1" ss:Color="#CBD5E1"/>\n'
+      + '        <Border ss:Position="Left" ss:LineStyle="Continuous" ss:Weight="1" ss:Color="#CBD5E1"/>\n'
+      + '        <Border ss:Position="Right" ss:LineStyle="Continuous" ss:Weight="1" ss:Color="#CBD5E1"/>\n'
+      + '        <Border ss:Position="Top" ss:LineStyle="Continuous" ss:Weight="1" ss:Color="#CBD5E1"/>\n'
+      + '      </Borders>\n'
+      + '      <Font ss:FontName="Segoe UI" ss:Size="10" ss:Color="#1E293B"/>\n'
+      + '      <Interior ss:Color="#F8FAFC" ss:Pattern="Solid"/>\n'
+      + '    </Style>\n'
+      + '    <Style ss:ID="CellNumber">\n'
+      + '      <Alignment ss:Horizontal="Right" ss:Vertical="Center"/>\n'
+      + '      <Borders>\n'
+      + '        <Border ss:Position="Bottom" ss:LineStyle="Continuous" ss:Weight="1" ss:Color="#CBD5E1"/>\n'
+      + '        <Border ss:Position="Left" ss:LineStyle="Continuous" ss:Weight="1" ss:Color="#CBD5E1"/>\n'
+      + '        <Border ss:Position="Right" ss:LineStyle="Continuous" ss:Weight="1" ss:Color="#CBD5E1"/>\n'
+      + '        <Border ss:Position="Top" ss:LineStyle="Continuous" ss:Weight="1" ss:Color="#CBD5E1"/>\n'
+      + '      </Borders>\n'
+      + '      <Font ss:FontName="Segoe UI" ss:Size="10" ss:Color="#1E293B"/>\n'
+      + '      <NumberFormat ss:Format="#,##0"/>\n'
+      + '    </Style>\n'
+      + '    <Style ss:ID="CellNumberZebra">\n'
+      + '      <Alignment ss:Horizontal="Right" ss:Vertical="Center"/>\n'
+      + '      <Borders>\n'
+      + '        <Border ss:Position="Bottom" ss:LineStyle="Continuous" ss:Weight="1" ss:Color="#CBD5E1"/>\n'
+      + '        <Border ss:Position="Left" ss:LineStyle="Continuous" ss:Weight="1" ss:Color="#CBD5E1"/>\n'
+      + '        <Border ss:Position="Right" ss:LineStyle="Continuous" ss:Weight="1" ss:Color="#CBD5E1"/>\n'
+      + '        <Border ss:Position="Top" ss:LineStyle="Continuous" ss:Weight="1" ss:Color="#CBD5E1"/>\n'
+      + '      </Borders>\n'
+      + '      <Font ss:FontName="Segoe UI" ss:Size="10" ss:Color="#1E293B"/>\n'
+      + '      <Interior ss:Color="#F8FAFC" ss:Pattern="Solid"/>\n'
+      + '      <NumberFormat ss:Format="#,##0"/>\n'
+      + '    </Style>\n'
+      + '    <Style ss:ID="CellTotal">\n'
+      + '      <Alignment ss:Horizontal="Right" ss:Vertical="Center"/>\n'
+      + '      <Borders>\n'
+      + '        <Border ss:Position="Bottom" ss:LineStyle="Double" ss:Weight="3" ss:Color="#107C41"/>\n'
+      + '        <Border ss:Position="Left" ss:LineStyle="Continuous" ss:Weight="1" ss:Color="#CBD5E1"/>\n'
+      + '        <Border ss:Position="Right" ss:LineStyle="Continuous" ss:Weight="1" ss:Color="#CBD5E1"/>\n'
+      + '        <Border ss:Position="Top" ss:LineStyle="Continuous" ss:Weight="2" ss:Color="#107C41"/>\n'
+      + '      </Borders>\n'
+      + '      <Font ss:FontName="Segoe UI" ss:Size="10" ss:Color="#065F46" ss:Bold="1"/>\n'
+      + '      <Interior ss:Color="#ECFDF5" ss:Pattern="Solid"/>\n'
+      + '      <NumberFormat ss:Format="#,##0"/>\n'
+      + '    </Style>\n'
+      + '    <Style ss:ID="CellTotalLabel">\n'
+      + '      <Alignment ss:Horizontal="Center" ss:Vertical="Center"/>\n'
+      + '      <Borders>\n'
+      + '        <Border ss:Position="Bottom" ss:LineStyle="Double" ss:Weight="3" ss:Color="#107C41"/>\n'
+      + '        <Border ss:Position="Left" ss:LineStyle="Continuous" ss:Weight="1" ss:Color="#CBD5E1"/>\n'
+      + '        <Border ss:Position="Right" ss:LineStyle="Continuous" ss:Weight="1" ss:Color="#CBD5E1"/>\n'
+      + '        <Border ss:Position="Top" ss:LineStyle="Continuous" ss:Weight="2" ss:Color="#107C41"/>\n'
+      + '      </Borders>\n'
+      + '      <Font ss:FontName="Segoe UI" ss:Size="10" ss:Color="#065F46" ss:Bold="1"/>\n'
+      + '      <Interior ss:Color="#ECFDF5" ss:Pattern="Solid"/>\n'
+      + '    </Style>\n'
+      + '    <Style ss:ID="TitleBanner">\n'
+      + '      <Alignment ss:Horizontal="Left" ss:Vertical="Center"/>\n'
+      + '      <Font ss:FontName="Segoe UI" ss:Size="12" ss:Color="#FFFFFF" ss:Bold="1"/>\n'
+      + '      <Interior ss:Color="#107C41" ss:Pattern="Solid"/>\n'
+      + '    </Style>\n'
+      + '    <Style ss:ID="KpiHeader">\n'
+      + '      <Alignment ss:Horizontal="Left" ss:Vertical="Center"/>\n'
+      + '      <Borders>\n'
+      + '        <Border ss:Position="Bottom" ss:LineStyle="Continuous" ss:Weight="1" ss:Color="#CBD5E1"/>\n'
+      + '        <Border ss:Position="Left" ss:LineStyle="Continuous" ss:Weight="1" ss:Color="#CBD5E1"/>\n'
+      + '        <Border ss:Position="Right" ss:LineStyle="Continuous" ss:Weight="1" ss:Color="#CBD5E1"/>\n'
+      + '        <Border ss:Position="Top" ss:LineStyle="Continuous" ss:Weight="1" ss:Color="#CBD5E1"/>\n'
+      + '      </Borders>\n'
+      + '      <Font ss:FontName="Segoe UI" ss:Size="10" ss:Color="#065F46" ss:Bold="1"/>\n'
+      + '      <Interior ss:Color="#ECFDF5" ss:Pattern="Solid"/>\n'
+      + '    </Style>\n'
+      + '  </Styles>\n';
+
+    // SHEET 1: PANORAMA DETAIL SALES (Item x Pembeli)
+    if (ExcelExportState.type === 'panorama_all' || ExcelExportState.type === 'panorama_items') {
+      xml += '  <Worksheet ss:Name="Panorama_Sales_Item">\n'
+        + '    <Table ss:DefaultRowHeight="20">\n'
+        + '      <Column ss:Width="115"/>\n'
+        + '      <Column ss:Width="110"/>\n'
+        + '      <Column ss:Width="140"/>\n'
+        + '      <Column ss:Width="115"/>\n'
+        + '      <Column ss:Width="95"/>\n'
+        + '      <Column ss:Width="90"/>\n'
+        + '      <Column ss:Width="80"/>\n'
+        + '      <Column ss:Width="180"/>\n'
+        + '      <Column ss:Width="70"/>\n'
+        + '      <Column ss:Width="110"/>\n'
+        + '      <Column ss:Width="125"/>\n'
+        + '      <Column ss:Width="95"/>\n'
+        + '      <Column ss:Width="125"/>\n'
+        + '      <Column ss:Width="130"/>\n'
+        + '      <Row ss:Height="26">\n'
+        + '        <Cell ss:StyleID="Header"><Data ss:Type="String">No. Invoice</Data></Cell>\n'
+        + '        <Cell ss:StyleID="Header"><Data ss:Type="String">Tanggal &amp; Waktu</Data></Cell>\n'
+        + '        <Cell ss:StyleID="Header"><Data ss:Type="String">Nama Pembeli</Data></Cell>\n'
+        + '        <Cell ss:StyleID="Header"><Data ss:Type="String">WhatsApp Pembeli</Data></Cell>\n'
+        + '        <Cell ss:StyleID="Header"><Data ss:Type="String">Nama Kasir</Data></Cell>\n'
+        + '        <Cell ss:StyleID="Header"><Data ss:Type="String">Metode Bayar</Data></Cell>\n'
+        + '        <Cell ss:StyleID="Header"><Data ss:Type="String">Kode SKU</Data></Cell>\n'
+        + '        <Cell ss:StyleID="Header"><Data ss:Type="String">Nama Produk ATK</Data></Cell>\n'
+        + '        <Cell ss:StyleID="Header"><Data ss:Type="String">Qty Beli</Data></Cell>\n'
+        + '        <Cell ss:StyleID="Header"><Data ss:Type="String">Harga Satuan (Rp)</Data></Cell>\n'
+        + '        <Cell ss:StyleID="Header"><Data ss:Type="String">Total Omset Item (Rp)</Data></Cell>\n'
+        + '        <Cell ss:StyleID="Header"><Data ss:Type="String">Diskon Nota (Rp)</Data></Cell>\n'
+        + '        <Cell ss:StyleID="Header"><Data ss:Type="String">Total Akhir Nota (Rp)</Data></Cell>\n'
+        + '        <Cell ss:StyleID="Header"><Data ss:Type="String">Catatan</Data></Cell>\n'
+        + '      </Row>\n';
+
+      var totQty = 0;
+      var totItemOmset = 0;
+
+      (data.panoramaRows || []).forEach(function (r, idx) {
+        var isZ = (idx % 2 === 1);
+        var sLeft = isZ ? 'CellLeftZebra' : 'CellLeft';
+        var sCenter = isZ ? 'CellCenterZebra' : 'CellCenter';
+        var sNum = isZ ? 'CellNumberZebra' : 'CellNumber';
+
+        var q = Number(r.qty) || 0;
+        var h = Number(r.hargaSatuan) || 0;
+        var sub = Number(r.subtotalItem) || (q * h);
+        var dis = Number(r.diskonNota) || 0;
+        var tot = Number(r.totalAkhirNota) || 0;
+
+        totQty += q;
+        totItemOmset += sub;
+
+        xml += '      <Row ss:Height="20">\n'
+          + '        <Cell ss:StyleID="' + sCenter + '"><Data ss:Type="String">' + escXml(r.noInvoice) + '</Data></Cell>\n'
+          + '        <Cell ss:StyleID="' + sCenter + '"><Data ss:Type="String">' + escXml(r.tanggal) + '</Data></Cell>\n'
+          + '        <Cell ss:StyleID="' + sLeft + '"><Data ss:Type="String">' + escXml(r.pelanggan) + '</Data></Cell>\n'
+          + '        <Cell ss:StyleID="' + sCenter + '"><Data ss:Type="String">' + escXml(r.noWhatsApp) + '</Data></Cell>\n'
+          + '        <Cell ss:StyleID="' + sLeft + '"><Data ss:Type="String">' + escXml(r.kasir) + '</Data></Cell>\n'
+          + '        <Cell ss:StyleID="' + sCenter + '"><Data ss:Type="String">' + escXml(r.metodeBayar) + '</Data></Cell>\n'
+          + '        <Cell ss:StyleID="' + sCenter + '"><Data ss:Type="String">' + escXml(r.kodeBarang) + '</Data></Cell>\n'
+          + '        <Cell ss:StyleID="' + sLeft + '"><Data ss:Type="String">' + escXml(r.namaBarang) + '</Data></Cell>\n'
+          + '        <Cell ss:StyleID="' + sNum + '"><Data ss:Type="Number">' + q + '</Data></Cell>\n'
+          + '        <Cell ss:StyleID="' + sNum + '"><Data ss:Type="Number">' + h + '</Data></Cell>\n'
+          + '        <Cell ss:StyleID="' + sNum + '"><Data ss:Type="Number">' + sub + '</Data></Cell>\n'
+          + '        <Cell ss:StyleID="' + sNum + '"><Data ss:Type="Number">' + dis + '</Data></Cell>\n'
+          + '        <Cell ss:StyleID="' + sNum + '"><Data ss:Type="Number">' + tot + '</Data></Cell>\n'
+          + '        <Cell ss:StyleID="' + sLeft + '"><Data ss:Type="String">' + escXml(r.catatanNota) + '</Data></Cell>\n'
+          + '      </Row>\n';
+      });
+
+      // Baris Total Grand Total di Bawah
+      xml += '      <Row ss:Height="24">\n'
+        + '        <Cell ss:StyleID="CellTotalLabel" ss:MergeAcross="7"><Data ss:Type="String">TOTAL KESELURUHAN PENJUALAN</Data></Cell>\n'
+        + '        <Cell ss:StyleID="CellTotal"><Data ss:Type="Number">' + totQty + '</Data></Cell>\n'
+        + '        <Cell ss:StyleID="CellTotal"><Data ss:Type="String">-</Data></Cell>\n'
+        + '        <Cell ss:StyleID="CellTotal"><Data ss:Type="Number">' + totItemOmset + '</Data></Cell>\n'
+        + '        <Cell ss:StyleID="CellTotal"><Data ss:Type="String">-</Data></Cell>\n'
+        + '        <Cell ss:StyleID="CellTotal"><Data ss:Type="Number">' + (Number(summary.grandTotalOmset) || totItemOmset) + '</Data></Cell>\n'
+        + '        <Cell ss:StyleID="CellTotal"><Data ss:Type="String">-</Data></Cell>\n'
+        + '      </Row>\n'
+        + '    </Table>\n'
+        + '  </Worksheet>\n';
+    }
+
+    // SHEET 2: REKAP NOTA INVOICE
+    if (ExcelExportState.type === 'panorama_all' || ExcelExportState.type === 'rekap_nota') {
+      xml += '  <Worksheet ss:Name="Rekap_Nota_Transaksi">\n'
+        + '    <Table ss:DefaultRowHeight="20">\n'
+        + '      <Column ss:Width="115"/>\n'
+        + '      <Column ss:Width="110"/>\n'
+        + '      <Column ss:Width="100"/>\n'
+        + '      <Column ss:Width="140"/>\n'
+        + '      <Column ss:Width="115"/>\n'
+        + '      <Column ss:Width="95"/>\n'
+        + '      <Column ss:Width="115"/>\n'
+        + '      <Column ss:Width="95"/>\n'
+        + '      <Column ss:Width="125"/>\n'
+        + '      <Column ss:Width="110"/>\n'
+        + '      <Column ss:Width="110"/>\n'
+        + '      <Column ss:Width="130"/>\n'
+        + '      <Row ss:Height="26">\n'
+        + '        <Cell ss:StyleID="Header"><Data ss:Type="String">No. Invoice</Data></Cell>\n'
+        + '        <Cell ss:StyleID="Header"><Data ss:Type="String">Tanggal &amp; Waktu</Data></Cell>\n'
+        + '        <Cell ss:StyleID="Header"><Data ss:Type="String">Nama Kasir</Data></Cell>\n'
+        + '        <Cell ss:StyleID="Header"><Data ss:Type="String">Nama Pembeli</Data></Cell>\n'
+        + '        <Cell ss:StyleID="Header"><Data ss:Type="String">WhatsApp Pembeli</Data></Cell>\n'
+        + '        <Cell ss:StyleID="Header"><Data ss:Type="String">Metode Bayar</Data></Cell>\n'
+        + '        <Cell ss:StyleID="Header"><Data ss:Type="String">Subtotal (Rp)</Data></Cell>\n'
+        + '        <Cell ss:StyleID="Header"><Data ss:Type="String">Diskon (Rp)</Data></Cell>\n'
+        + '        <Cell ss:StyleID="Header"><Data ss:Type="String">Total Akhir (Rp)</Data></Cell>\n'
+        + '        <Cell ss:StyleID="Header"><Data ss:Type="String">Uang Bayar (Rp)</Data></Cell>\n'
+        + '        <Cell ss:StyleID="Header"><Data ss:Type="String">Kembalian (Rp)</Data></Cell>\n'
+        + '        <Cell ss:StyleID="Header"><Data ss:Type="String">Catatan Transaksi</Data></Cell>\n'
+        + '      </Row>\n';
+
+      var totSub = 0;
+      var totDis = 0;
+      var totAkh = 0;
+
+      (data.rekapNota || []).forEach(function (n, idx) {
+        var isZ = (idx % 2 === 1);
+        var sLeft = isZ ? 'CellLeftZebra' : 'CellLeft';
+        var sCenter = isZ ? 'CellCenterZebra' : 'CellCenter';
+        var sNum = isZ ? 'CellNumberZebra' : 'CellNumber';
+
+        var sb = Number(n.subtotal) || Number(n.total) || 0;
+        var ds = Number(n.diskon) || 0;
+        var tt = Number(n.total) || 0;
+        var by = Number(n.bayar) || 0;
+        var km = Number(n.kembali) || 0;
+
+        totSub += sb;
+        totDis += ds;
+        totAkh += tt;
+
+        xml += '      <Row ss:Height="20">\n'
+          + '        <Cell ss:StyleID="' + sCenter + '"><Data ss:Type="String">' + escXml(n.noInvoice) + '</Data></Cell>\n'
+          + '        <Cell ss:StyleID="' + sCenter + '"><Data ss:Type="String">' + escXml(n.tanggal) + '</Data></Cell>\n'
+          + '        <Cell ss:StyleID="' + sLeft + '"><Data ss:Type="String">' + escXml(n.kasir) + '</Data></Cell>\n'
+          + '        <Cell ss:StyleID="' + sLeft + '"><Data ss:Type="String">' + escXml(n.pelanggan) + '</Data></Cell>\n'
+          + '        <Cell ss:StyleID="' + sCenter + '"><Data ss:Type="String">' + escXml(n.noWhatsApp) + '</Data></Cell>\n'
+          + '        <Cell ss:StyleID="' + sCenter + '"><Data ss:Type="String">' + escXml(n.metodeBayar) + '</Data></Cell>\n'
+          + '        <Cell ss:StyleID="' + sNum + '"><Data ss:Type="Number">' + sb + '</Data></Cell>\n'
+          + '        <Cell ss:StyleID="' + sNum + '"><Data ss:Type="Number">' + ds + '</Data></Cell>\n'
+          + '        <Cell ss:StyleID="' + sNum + '"><Data ss:Type="Number">' + tt + '</Data></Cell>\n'
+          + '        <Cell ss:StyleID="' + sNum + '"><Data ss:Type="Number">' + by + '</Data></Cell>\n'
+          + '        <Cell ss:StyleID="' + sNum + '"><Data ss:Type="Number">' + km + '</Data></Cell>\n'
+          + '        <Cell ss:StyleID="' + sLeft + '"><Data ss:Type="String">' + escXml(n.catatan) + '</Data></Cell>\n'
+          + '      </Row>\n';
+      });
+
+      xml += '      <Row ss:Height="24">\n'
+        + '        <Cell ss:StyleID="CellTotalLabel" ss:MergeAcross="5"><Data ss:Type="String">TOTAL KESELURUHAN NOTA</Data></Cell>\n'
+        + '        <Cell ss:StyleID="CellTotal"><Data ss:Type="Number">' + totSub + '</Data></Cell>\n'
+        + '        <Cell ss:StyleID="CellTotal"><Data ss:Type="Number">' + totDis + '</Data></Cell>\n'
+        + '        <Cell ss:StyleID="CellTotal"><Data ss:Type="Number">' + totAkh + '</Data></Cell>\n'
+        + '        <Cell ss:StyleID="CellTotal"><Data ss:Type="String">-</Data></Cell>\n'
+        + '        <Cell ss:StyleID="CellTotal"><Data ss:Type="String">-</Data></Cell>\n'
+        + '        <Cell ss:StyleID="CellTotal"><Data ss:Type="String">-</Data></Cell>\n'
+        + '      </Row>\n'
+        + '    </Table>\n'
+        + '  </Worksheet>\n';
+    }
+
+    // SHEET 3: RANKING PRODUK
+    if (ExcelExportState.type === 'panorama_all') {
+      xml += '  <Worksheet ss:Name="Ranking_Produk_ATK">\n'
+        + '    <Table ss:DefaultRowHeight="20">\n'
+        + '      <Column ss:Width="70"/>\n'
+        + '      <Column ss:Width="90"/>\n'
+        + '      <Column ss:Width="220"/>\n'
+        + '      <Column ss:Width="105"/>\n'
+        + '      <Column ss:Width="140"/>\n'
+        + '      <Column ss:Width="120"/>\n'
+        + '      <Row ss:Height="26">\n'
+        + '        <Cell ss:StyleID="Header"><Data ss:Type="String">Peringkat</Data></Cell>\n'
+        + '        <Cell ss:StyleID="Header"><Data ss:Type="String">Kode SKU</Data></Cell>\n'
+        + '        <Cell ss:StyleID="Header"><Data ss:Type="String">Nama Produk ATK</Data></Cell>\n'
+        + '        <Cell ss:StyleID="Header"><Data ss:Type="String">Total Qty Terjual</Data></Cell>\n'
+        + '        <Cell ss:StyleID="Header"><Data ss:Type="String">Total Omset Produk (Rp)</Data></Cell>\n'
+        + '        <Cell ss:StyleID="Header"><Data ss:Type="String">% Kontribusi Omset</Data></Cell>\n'
+        + '      </Row>\n';
+
+      (data.produkRanking || []).forEach(function (p, idx) {
+        var isZ = (idx % 2 === 1);
+        var sLeft = isZ ? 'CellLeftZebra' : 'CellLeft';
+        var sCenter = isZ ? 'CellCenterZebra' : 'CellCenter';
+        var sNum = isZ ? 'CellNumberZebra' : 'CellNumber';
+
+        xml += '      <Row ss:Height="20">\n'
+          + '        <Cell ss:StyleID="' + sCenter + '"><Data ss:Type="Number">' + p.rank + '</Data></Cell>\n'
+          + '        <Cell ss:StyleID="' + sCenter + '"><Data ss:Type="String">' + escXml(p.kode) + '</Data></Cell>\n'
+          + '        <Cell ss:StyleID="' + sLeft + '"><Data ss:Type="String">' + escXml(p.nama) + '</Data></Cell>\n'
+          + '        <Cell ss:StyleID="' + sNum + '"><Data ss:Type="Number">' + (Number(p.totalQty) || 0) + '</Data></Cell>\n'
+          + '        <Cell ss:StyleID="' + sNum + '"><Data ss:Type="Number">' + (Number(p.totalOmset) || 0) + '</Data></Cell>\n'
+          + '        <Cell ss:StyleID="' + sCenter + '"><Data ss:Type="String">' + (p.kontribusiPersen || 0) + '%</Data></Cell>\n'
+          + '      </Row>\n';
+      });
+
+      xml += '    </Table>\n'
+        + '  </Worksheet>\n';
+    }
+
+    // SHEET 4: RINGKASAN EKSEKUTIF
+    if (ExcelExportState.type === 'panorama_all') {
+      xml += '  <Worksheet ss:Name="Ringkasan_Eksekutif">\n'
+        + '    <Table ss:DefaultRowHeight="22">\n'
+        + '      <Column ss:Width="250"/>\n'
+        + '      <Column ss:Width="160"/>\n'
+        + '      <Row ss:Height="30">\n'
+        + '        <Cell ss:StyleID="TitleBanner" ss:MergeAcross="1"><Data ss:Type="String">  LAPORAN EKSEKUTIF PENJUALAN - MAH POS</Data></Cell>\n'
+        + '      </Row>\n'
+        + '      <Row ss:Height="20">\n'
+        + '        <Cell ss:StyleID="CellLeft"><Data ss:Type="String">Nama Toko ATK</Data></Cell>\n'
+        + '        <Cell ss:StyleID="CellLeft"><Data ss:Type="String">' + escXml((AppState.settings && AppState.settings.NAMA_TOKO) || 'MAH POS - Toko ATK') + '</Data></Cell>\n'
+        + '      </Row>\n'
+        + '      <Row ss:Height="20">\n'
+        + '        <Cell ss:StyleID="CellLeft"><Data ss:Type="String">Periode Penarikan Laporan</Data></Cell>\n'
+        + '        <Cell ss:StyleID="CellLeft"><Data ss:Type="String">' + escXml(periodName) + '</Data></Cell>\n'
+        + '      </Row>\n'
+        + '      <Row ss:Height="20">\n'
+        + '        <Cell ss:StyleID="CellLeft"><Data ss:Type="String">Waktu Ekspor Spreadsheet</Data></Cell>\n'
+        + '        <Cell ss:StyleID="CellLeft"><Data ss:Type="String">' + escXml(new Date().toLocaleString('id-ID')) + '</Data></Cell>\n'
+        + '      </Row>\n'
+        + '      <Row ss:Height="14"><Cell><Data ss:Type="String"></Data></Cell></Row>\n'
+        + '      <Row ss:Height="24">\n'
+        + '        <Cell ss:StyleID="KpiHeader"><Data ss:Type="String">INDIKATOR KINERJA UTAMA (KPI)</Data></Cell>\n'
+        + '        <Cell ss:StyleID="KpiHeader"><Data ss:Type="String">NILAI CAPAIAN</Data></Cell>\n'
+        + '      </Row>\n'
+        + '      <Row ss:Height="20">\n'
+        + '        <Cell ss:StyleID="CellLeft"><Data ss:Type="String">Total Omset Penjualan (Gross Revenue)</Data></Cell>\n'
+        + '        <Cell ss:StyleID="CellNumber"><Data ss:Type="Number">' + (Number(summary.grandTotalOmset) || 0) + '</Data></Cell>\n'
+        + '      </Row>\n'
+        + '      <Row ss:Height="20">\n'
+        + '        <Cell ss:StyleID="CellLeft"><Data ss:Type="String">Total Produk Terjual (Kuantiti Pcs)</Data></Cell>\n'
+        + '        <Cell ss:StyleID="CellNumber"><Data ss:Type="Number">' + (Number(summary.grandTotalQty) || 0) + '</Data></Cell>\n'
+        + '      </Row>\n'
+        + '      <Row ss:Height="20">\n'
+        + '        <Cell ss:StyleID="CellLeft"><Data ss:Type="String">Total Transaksi Nota Terbit</Data></Cell>\n'
+        + '        <Cell ss:StyleID="CellNumber"><Data ss:Type="Number">' + (Number(summary.grandTotalTrx) || 0) + '</Data></Cell>\n'
+        + '      </Row>\n'
+        + '      <Row ss:Height="20">\n'
+        + '        <Cell ss:StyleID="CellLeft"><Data ss:Type="String">Total Pembeli Terlayani</Data></Cell>\n'
+        + '        <Cell ss:StyleID="CellNumber"><Data ss:Type="Number">' + (Number(summary.totalPelangganUnik) || 0) + '</Data></Cell>\n'
+        + '      </Row>\n'
+        + '      <Row ss:Height="20">\n'
+        + '        <Cell ss:StyleID="CellLeft"><Data ss:Type="String">Rata-Rata Belanja per Nota (Basket Size)</Data></Cell>\n'
+        + '        <Cell ss:StyleID="CellNumber"><Data ss:Type="Number">' + (summary.grandTotalTrx > 0 ? Math.round(summary.grandTotalOmset / summary.grandTotalTrx) : 0) + '</Data></Cell>\n'
+        + '      </Row>\n'
+        + '    </Table>\n'
+        + '  </Worksheet>\n';
+    }
+
+    xml += '</Workbook>';
+
+    // Download file Excel .xls resmi via Blob
+    var blob = new Blob([xml], { type: 'application/vnd.ms-excel;charset=utf-8' });
+    var url = URL.createObjectURL(blob);
     var link = document.createElement('a');
-    var csvName = fileName.replace('.xlsx', '.csv');
-    link.href = URL.createObjectURL(blob);
-    link.download = csvName;
+    link.href = url;
+    link.download = fileName;
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
+    setTimeout(function () { URL.revokeObjectURL(url); }, 1500);
 
-    showToast('Berhasil mengunduh laporan CSV ' + csvName, 'success');
+    showToast('Berhasil mengunduh Excel Terformat ' + fileName, 'success');
     closeExcelExportModal();
   }
 
@@ -4144,5 +4570,6 @@ const GasBridge = {
   window.closeExcelExportModal = closeExcelExportModal;
   window.setExcelExportPeriod = setExcelExportPeriod;
   window.selectExcelExportType = selectExcelExportType;
+  window.setExcelFileFormat = setExcelFileFormat;
   window.triggerExcelCustomRefresh = triggerExcelCustomRefresh;
   window.executeExcelDownload = executeExcelDownload;
