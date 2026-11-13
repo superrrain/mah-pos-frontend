@@ -3280,6 +3280,7 @@ const GasBridge = {
   function populateMahexRegions() {
     var regionSelect = document.getElementById('mhx_region');
     if (!regionSelect) return;
+    var currentReg = regionSelect.value;
     regionSelect.innerHTML = '';
     var data = MahexState.tarifData || DEFAULT_MAHEX_TARIF;
     Object.keys(data).forEach(function (reg) {
@@ -3288,6 +3289,9 @@ const GasBridge = {
       opt.textContent = reg;
       regionSelect.appendChild(opt);
     });
+    if (currentReg && data[currentReg]) {
+      regionSelect.value = currentReg;
+    }
     updateMahexDestinations();
   }
 
@@ -3297,6 +3301,7 @@ const GasBridge = {
     if (!regionSelect || !storeSelect) return;
 
     var region = regionSelect.value;
+    var currentStore = storeSelect.value;
     storeSelect.innerHTML = '';
     var data = MahexState.tarifData || DEFAULT_MAHEX_TARIF;
 
@@ -3307,6 +3312,10 @@ const GasBridge = {
         opt.textContent = store;
         storeSelect.appendChild(opt);
       });
+    }
+
+    if (currentStore && data[region] && data[region][currentStore]) {
+      storeSelect.value = currentStore;
     }
 
     var destInput = document.getElementById('mhx_destination');
@@ -3528,8 +3537,17 @@ const GasBridge = {
   }
 
   function fetchMahexMasterDataSheets(manual) {
+    var btnSync = document.getElementById('btnSyncMahexTarif');
+    if (btnSync) {
+      btnSync.style.opacity = '0.6';
+      btnSync.style.pointerEvents = 'none';
+    }
     if (manual) showToast('Menghubungkan ke Google Sheets MahexTarif & MahexBrand...', 'info');
     GasBridge.call('getMahexMasterData', [], function (res) {
+      if (btnSync) {
+        btnSync.style.opacity = '1';
+        btnSync.style.pointerEvents = 'auto';
+      }
       if (res && res.success) {
         if (res.brands && Array.isArray(res.brands) && res.brands.length > 0) {
           MahexState.brands = res.brands;
@@ -3545,6 +3563,10 @@ const GasBridge = {
         if (manual) showToast('Gagal memuat master data Sheets, menggunakan database lokal.', 'error');
       }
     }, function () {
+      if (btnSync) {
+        btnSync.style.opacity = '1';
+        btnSync.style.pointerEvents = 'auto';
+      }
       if (manual) showToast('Koneksi backend gagal, menggunakan data lokal.', 'error');
     });
   }
