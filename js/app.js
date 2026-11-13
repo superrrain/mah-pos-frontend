@@ -3227,7 +3227,9 @@ const GasBridge = {
   const MahexLogoBase64 = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAADAAAAAwCAYAAABXAvmFAAAACXBIWXMAAA7DAAAOwwHHb6hkAAAAIGNIUk0AAHolAACAgwAA+f8AAIDpAAB1MAAA6mAAADqYAAAXb5JfxUYAAAM4SURBVHja7JrPa1xVHMafb5l8V5s0gqKItYoiq0tB8APQQpcuumld6ELw1oUhdKNuhW67VdDFi26sdBF1oQtV21tQUFEXLQUbFRG0VpSkVmtkMpOZeZ5z7swkTWbe5j7l3P1AkjlnfvM753znnsyZMwAgQ4YMGbT1A4gBf1uB0u5H+P32tK2H7X4Gf01Vb6O8L4gB/598cI2Y9m20f1qF7B7aX221j79yD4AEPj5qF5u9RDAh0g1G/g90zJ/Q7W2z5hX7fC0tH11Q/W21d/1b4B9B4gG41sP5nB2tE16D5I/9z8330jAHz2s0uP13340+k7hWk7x+90y9+Iu7v/9T2w2Y3f9zXbW32V/iAX/Y2j/rD1f8G+P0b1A7d5J/bT1bF4P+W7e6X07aex+2qBq8aZl5s5JzN1k5v4I9OtvvM16xJ1p/uT7K18v1s3mH626L3hB9N0+8Nf/Zz4vJ+D1H1W1M3N7mHl63Vz5D0N75x6bW38zWbrlA9sP2q0P97L/wE/gL4uH2MffvYn6P7P3bEaN1H+9zM4Y7vH51N3e8W7Z7c78Z+uC83bC61c6b12+86e4b2C6q7D/w6C2+w/y63P1vD+W3HhA920VvdZ6f1/c5W92tX7r7e7d90M/wP9P9F8aXq3g/wA9Gz0d5885f8fXg6L176378AfnX232M37y75nO7/tXN+L315w/h16rV6Y5j3Y9o9oB599Y9jR4b/e9L7O84X6z2yW88z+0f77+u9g86x90h9674vWw+x//hUv17x66yD97w30N+r/wL7G/wG+/d/2v5v2pC521v5tWw3n9m3+q9w5+4N548L32131W54fW31e6q9w7vXfH+u94f836s/4H0e8Y/TvfGffvffN5s2LvvL/wW8A/73y74n9d+29t24Ltv627v2d0/uWfvG573673cPf/f3v3vvqN107W/Y3v1r6L76Tfvvf/r/d8n1XGq1Xf2r98fvffr+b73rf1749833v27X03q9u+vvdvfdvfe+vffvvevffu7b777e+9//wDv/fG72vXvfvu+/fevf9+/fd/9+/ffvu7//v3r7vvu77//v3vu/f+v//vfv39vff//v3u3vvv3vu/fvvvvvvv77//7977//v3vu+////x+3/9k=";
 
   const MahexState = {
+    brands: ['MIXUE', 'MOMOYO', 'TIANLALA', 'WEDRINK', 'LAINNYA'],
     tarifData: Object.assign({}, DEFAULT_MAHEX_TARIF),
+    regions: ["BANTEN RAYA", "JABODETABEK - BANDUNG - PRIATIM", "PANTURA RAYA"],
     isCustomBrand: false,
     isCustomRegion: false,
     isCustomStore: false,
@@ -3249,10 +3251,30 @@ const GasBridge = {
       dateInput.valueAsDate = new Date();
     }
 
+    populateMahexBrands();
     populateMahexRegions();
     generateMahexInvoiceNo();
     calculateMahexRate();
-    fetchMahexTarifSheets(false);
+    fetchMahexMasterDataSheets(false);
+  }
+
+  function populateMahexBrands() {
+    var brandSelect = document.getElementById('mhx_brand');
+    if (!brandSelect) return;
+    var currentVal = brandSelect.value;
+    brandSelect.innerHTML = '';
+    var brands = MahexState.brands || ['MIXUE', 'MOMOYO', 'TIANLALA', 'WEDRINK', 'LAINNYA'];
+    brands.forEach(function (b) {
+      var opt = document.createElement('option');
+      opt.value = b;
+      opt.textContent = b;
+      brandSelect.appendChild(opt);
+    });
+    if (currentVal && brands.indexOf(currentVal) !== -1) {
+      brandSelect.value = currentVal;
+    } else if (brands.length > 0) {
+      brandSelect.value = brands[0];
+    }
   }
 
   function populateMahexRegions() {
@@ -3350,7 +3372,7 @@ const GasBridge = {
     var btnSync = document.getElementById('btnSyncMahexTarif');
     if (btnSync) {
       btnSync.addEventListener('click', function () {
-        fetchMahexTarifSheets(true);
+        fetchMahexMasterDataSheets(true);
       });
     }
 
@@ -3505,19 +3527,30 @@ const GasBridge = {
     }
   }
 
-  function fetchMahexTarifSheets(manual) {
-    if (manual) showToast('Menghubungkan ke Google Sheets MAHEX_TARIF...', 'info');
-    GasBridge.call('getMahexTarif', [], function (res) {
-      if (res && res.success && res.data && Object.keys(res.data).length > 0) {
-        MahexState.tarifData = res.data;
-        populateMahexRegions();
-        if (manual) showToast('Master tarif MAHEX berhasil disinkronkan dari Google Sheets!', 'success');
+  function fetchMahexMasterDataSheets(manual) {
+    if (manual) showToast('Menghubungkan ke Google Sheets MahexTarif & MahexBrand...', 'info');
+    GasBridge.call('getMahexMasterData', [], function (res) {
+      if (res && res.success) {
+        if (res.brands && Array.isArray(res.brands) && res.brands.length > 0) {
+          MahexState.brands = res.brands;
+          populateMahexBrands();
+        }
+        if (res.tarif && Object.keys(res.tarif).length > 0) {
+          MahexState.tarifData = res.tarif;
+          populateMahexRegions();
+        }
+        calculateMahexRate();
+        if (manual) showToast('Master tarif & brand MAHEX berhasil disinkronkan dari Google Sheets!', 'success');
       } else {
-        if (manual) showToast('Gagal memuat tarif Sheets, menggunakan tarif bawaan sistem.', 'error');
+        if (manual) showToast('Gagal memuat master data Sheets, menggunakan database lokal.', 'error');
       }
     }, function () {
-      if (manual) showToast('Koneksi backend gagal, menggunakan tarif lokal.', 'error');
+      if (manual) showToast('Koneksi backend gagal, menggunakan data lokal.', 'error');
     });
+  }
+
+  function fetchMahexTarifSheets(manual) {
+    fetchMahexMasterDataSheets(manual);
   }
 
   function generateMahexPDF() {
